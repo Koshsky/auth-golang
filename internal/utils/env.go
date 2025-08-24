@@ -86,16 +86,16 @@ func ValidatePort(port string) error {
 	if port == "" {
 		return fmt.Errorf("port cannot be empty")
 	}
-	
+
 	portNum, err := strconv.Atoi(port)
 	if err != nil {
 		return fmt.Errorf("port must be a number")
 	}
-	
+
 	if portNum < 1024 || portNum > 65535 {
 		return fmt.Errorf("port must be between 1024 and 65535")
 	}
-	
+
 	return nil
 }
 
