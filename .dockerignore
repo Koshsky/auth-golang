@@ -1,0 +1,36 @@
+# Git files
+.git
+.gitignore
+
+# CI/CD files
+.github/
+
+# Documentation
+README.md
+docs/
+
+# Development files
+.env
+.env.local
+.env.example
+
+# Build artifacts
+bin/
+auth-service
+
+# Test files
+*_test.go
+coverage.out
+coverage.html
+
+# IDE files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.log

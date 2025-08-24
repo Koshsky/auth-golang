@@ -69,7 +69,7 @@ func (suite *GormAdapterTestSuite) TestNewGormAdapterWithConfig_Success() {
 	}
 
 	// Act
-	adapter, err := repositories.NewGormAdapter(dbConfig)
+	adapter, err := repositories.NewGormAdapter(&dbConfig)
 
 	// Assert
 	suite.Require().Error(err) // Should fail because test DB doesn't exist

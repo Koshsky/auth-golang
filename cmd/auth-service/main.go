@@ -25,7 +25,7 @@ func setupServices(cfg *config.Config) (*services.AuthService, *server.AuthServe
 	}
 
 	// Initialize database and repositories
-	gormAdapter, err := repositories.NewGormAdapter(cfg.Database)
+	gormAdapter, err := repositories.NewGormAdapter(&cfg.Database)
 	if err != nil {
 		return nil, nil, err
 	}

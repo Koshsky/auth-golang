@@ -1,11 +1,6 @@
 run:
   timeout: 5m
   go: "1.24"
-  skip-dirs:
-    - mocks
-  skip-files:
-    - ".*\\.pb\\.go$"
-    - ".*_test\\.go$"
 
 linters:
   enable:
@@ -35,6 +30,11 @@ linters-settings:
       - style
 
 issues:
+  exclude-dirs:
+    - mocks
+  exclude-files:
+    - ".*\\.pb\\.go$"
+    - ".*_test\\.go$"
   exclude-rules:
     - text: ".*"
       linters:

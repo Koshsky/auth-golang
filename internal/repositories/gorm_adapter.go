@@ -15,7 +15,7 @@ type GormAdapter struct {
 }
 
 // NewGormAdapter creates a new adapter for GORM with config
-func NewGormAdapter(dbConfig config.DBConfig) (IDatabase, error) {
+func NewGormAdapter(dbConfig *config.DBConfig) (IDatabase, error) {
 	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
 		dbConfig.Host, dbConfig.Port, dbConfig.User, dbConfig.Password, dbConfig.DBName, dbConfig.SSLMode)
 

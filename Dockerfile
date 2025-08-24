@@ -9,16 +9,14 @@ RUN apk add --no-cache git libc6-compat wget curl netcat-openbsd && \
     mkdir -p /app/certs
 
 WORKDIR /app
-COPY auth-service/go.mod auth-service/go.sum ./auth-service/
-WORKDIR /app/auth-service
+
+# Copy go mod files first for better caching
+COPY go.mod go.sum ./
 RUN go mod download
 
-WORKDIR /app
-COPY auth-service ./auth-service
-# Copy TLS certs from repo (if present)
-COPY certs /app/certs
-
-WORKDIR /app/auth-service
+# Copy source code
+COPY . ./
+# Certs directory is already created above, TLS certs can be mounted at runtime
 
 # Build the binary and make it executable
 RUN CGO_ENABLED=0 go build -o auth-service ./cmd/auth-service/main.go && \

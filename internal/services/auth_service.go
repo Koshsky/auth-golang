@@ -39,6 +39,7 @@ func NewAuthService(userRepo repositories.IUserRepository, messageBroker messagi
 
 // Register registers a new user
 func (s *AuthService) Register(ctx context.Context, email, password string) (*models.User, error) {
+	_ = ctx // TODO: use ctx in future
 	if s.userRepo == nil {
 		return nil, errors.New("user repository is not initialized")
 	}
@@ -83,6 +84,7 @@ func (s *AuthService) Register(ctx context.Context, email, password string) (*mo
 
 // Login authenticates a user and returns JWT token
 func (s *AuthService) Login(ctx context.Context, email, password string) (string, *models.User, error) {
+	_ = ctx // TODO: use ctx in future
 	if s.userRepo == nil {
 		return "", nil, errors.New("user repository is not initialized")
 	}
@@ -108,6 +110,7 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (string
 
 // ValidateToken validates JWT token and returns claims
 func (s *AuthService) ValidateToken(ctx context.Context, tokenString string) (jwt.MapClaims, error) {
+	_ = ctx // TODO: use ctx in future
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])

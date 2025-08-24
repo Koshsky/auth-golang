@@ -30,7 +30,8 @@ type Config struct {
 }
 
 func LoadConfig() *Config {
-	godotenv.Load()
+	// Load .env file if it exists, ignore error if file doesn't exist
+	_ = godotenv.Load()
 
 	db := DBConfig{
 		Host:     utils.GetEnv("AUTH_DB_HOST", "auth-db"),

@@ -52,7 +52,8 @@ func NewValidator() *validator.Validate {
 	v := validator.New()
 	if err := RegisterCustomValidations(v); err != nil {
 		// Log error but don't panic - validator will still work without custom validations
-		// In production, you might want to handle this differently
+		// TODO: In production, you might want to handle this differently
+		println("Warning: Failed to register custom validations:", err.Error())
 	}
 	return v
 }
