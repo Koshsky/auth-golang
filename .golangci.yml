@@ -1,0 +1,57 @@
+run:
+  timeout: 5m
+  go: "1.24"
+  skip-dirs:
+    - mocks
+  skip-files:
+    - ".*\\.pb\\.go$"
+    - ".*_test\\.go$"
+
+linters:
+  enable:
+    - gofmt
+    - goimports
+    - govet
+    - errcheck
+    - staticcheck
+    - gosimple
+    - ineffassign
+    - unused
+    - misspell
+    - gosec
+    - prealloc
+    - gocritic
+    - revive
+  disable:
+    - typecheck
+
+linters-settings:
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - experimental
+      - opinionated
+      - performance
+      - style
+
+issues:
+  exclude-rules:
+    - text: ".*"
+      linters:
+        - typecheck
+    - path: _test\.go
+      linters:
+        - gosec
+        - errcheck
+    - path: mocks/.*\.go
+      linters:
+        - gosec
+        - errcheck
+        - unused
+        - ineffassign
+    - path: \.pb\.go$
+      linters:
+        - gosec
+        - errcheck
+        - unused
+        - ineffassign
