@@ -1,28 +1,19 @@
-package logger
+package logging
+
+import (
+	"context"
+	"log/slog"
+)
 
 //go:generate mockery --name=Logger --output=./mocks --outpkg=mocks --filename=Logger.go
 type Logger interface {
-	Log(message string, params ...interface{})
-}
-
-type LogLevel string
-
-const (
-	LevelDebug LogLevel = "DEBUG"
-	LevelInfo  LogLevel = "INFO"
-	LevelWarn  LogLevel = "WARN"
-	LevelError LogLevel = "ERROR"
-	LevelFatal LogLevel = "FATAL"
-)
-
-//go:generate mockery --name=StructuredLogger --output=./mocks --outpkg=mocks --filename=StructuredLogger.go
-type StructuredLogger interface {
-	Logger
-
-	LogWithLevel(level LogLevel, message string, params ...interface{})
-	Debug(message string, params ...interface{})
-	Info(message string, params ...interface{})
-	Warn(message string, params ...interface{})
-	Error(message string, params ...interface{})
-	Fatal(message string, params ...interface{})
+	Debug(msg string, args ...any)
+	DebugContext(ctx context.Context, msg string, args ...any)
+	Info(msg string, args ...any)
+	InfoContext(ctx context.Context, msg string, args ...any)
+	Warn(msg string, args ...any)
+	WarnContext(ctx context.Context, msg string, args ...any)
+	Error(msg string, args ...any)
+	ErrorContext(ctx context.Context, msg string, args ...any)
+	Log(ctx context.Context, level slog.Level, msg string, args ...any)
 }
