@@ -5,7 +5,9 @@ import (
 	"strings"
 )
 
-// MaskEmail masks email address, keeping only first character of local part
+// MaskEmail masks email address to prevent information leakage.
+// For local parts with 3+ characters, keeps only first character.
+// For very short local parts (1-2 chars), masks completely for security.
 func MaskEmail(email interface{}) string {
 	if email == nil {
 		return ""
@@ -32,12 +34,14 @@ func MaskEmail(email interface{}) string {
 	localPart := parts[0]
 	domain := parts[1]
 
-	// Keep first character of local part
+	// Mask local part to prevent information leakage
 	if len(localPart) == 0 {
 		return "*@" + domain
-	} else if len(localPart) == 1 {
-		return localPart + "@" + domain
+	} else if len(localPart) <= 2 {
+		// For very short local parts (1-2 chars), mask completely to prevent info leakage
+		return strings.Repeat("*", len(localPart)) + "@" + domain
 	} else {
+		// For longer local parts, keep first character and mask the rest
 		maskedLocal := string(localPart[0]) + strings.Repeat("*", len(localPart)-1)
 		return maskedLocal + "@" + domain
 	}

@@ -37,7 +37,7 @@ func (s *MaskingTestSuite) getEmailTestCases() []emailTestCase {
 		{
 			name:     "Single character local part",
 			input:    "a@test.com",
-			expected: "a@test.com",
+			expected: "*@test.com",
 		},
 		{
 			name:     "Long email",
@@ -143,9 +143,19 @@ func (s *MaskingTestSuite) TestMaskEmail_EdgeCases() {
 		s.Equal("*****", result)
 	})
 
-	s.Run("Very short email", func() {
+	s.Run("Very short email - single char", func() {
 		result := MaskEmail("u@d.c")
-		s.Equal("u@d.c", result)
+		s.Equal("*@d.c", result)
+	})
+
+	s.Run("Two character local part", func() {
+		result := MaskEmail("ab@test.com")
+		s.Equal("**@test.com", result)
+	})
+
+	s.Run("Three character local part", func() {
+		result := MaskEmail("abc@test.com")
+		s.Equal("a**@test.com", result)
 	})
 }
 
