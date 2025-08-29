@@ -1,51 +1,66 @@
 package logging
 
 import (
-	"context"
 	"errors"
 	"io"
 	"log/slog"
 	"os"
+	"strings"
+	"sync"
 
-	"github.com/Koshsky/subs-service/auth-service/internal/utils"
+	"github.com/Koshsky/subs-service/auth-service/internal/config"
 )
 
-// Config holds logger configuration
-type Config struct {
-	ServiceName string
-	LogLevel    slog.Level
-	Environment string
-	Version     string
-	Output      io.Writer
+var (
+	once sync.Once
+)
+
+// parseLogLevel converts string log level to slog.Level
+func parseLogLevel(level string) slog.Level {
+	switch strings.ToUpper(level) {
+	case "DEBUG":
+		return slog.LevelDebug
+	case "INFO":
+		return slog.LevelInfo
+	case "WARN", "WARNING":
+		return slog.LevelWarn
+	case "ERROR":
+		return slog.LevelError
+	default:
+		return slog.LevelInfo
+	}
 }
 
-// LogCtx holds context data for logging
-type LogCtx struct {
-	UserID    interface{} `json:"user_id,omitempty"`
-	RequestID interface{} `json:"request_id,omitempty"`
-	TraceID   interface{} `json:"trace_id,omitempty"`
-	Operation interface{} `json:"operation,omitempty"`
-	Error     interface{} `json:"error,omitempty"`
-	Email     interface{} `json:"email,omitempty"`
+// InitLogging initializes global slog logger configuration
+func InitLogging(config config.LogConfig) error {
+	return InitLoggingWithOutput(config, os.Stdout)
 }
 
-// contextHandler wraps slog.Handler to extract context attributes
-type contextHandler struct {
-	base slog.Handler
+// InitLoggingWithOutput initializes logging with custom output (for testing)
+func InitLoggingWithOutput(logConfig config.LogConfig, output io.Writer) error {
+	var err error
+	once.Do(func() {
+		var logger *slog.Logger
+		logger, err = createLogger(logConfig, output)
+		if err == nil {
+			slog.SetDefault(logger)
+		}
+	})
+	return err
 }
 
-// NewLogger creates a new structured logger with JSON output
-func NewLogger(config Config) (*slog.Logger, error) {
+// createLogger creates a new structured logger with JSON output
+func createLogger(config config.LogConfig, output io.Writer) (*slog.Logger, error) {
 	if config.ServiceName == "" {
 		return nil, errors.New("ServiceName is required")
 	}
-	if config.Output == nil {
-		config.Output = os.Stdout
+	if output == nil {
+		output = os.Stdout
 	}
 
 	// Create base JSON handler with Kibana-compatible format
-	baseHandler := slog.NewJSONHandler(config.Output, &slog.HandlerOptions{
-		Level:     config.LogLevel,
+	baseHandler := slog.NewJSONHandler(output, &slog.HandlerOptions{
+		Level:     parseLogLevel(config.LogLevel),
 		AddSource: true,
 		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
 			switch a.Key {
@@ -72,91 +87,13 @@ func NewLogger(config Config) (*slog.Logger, error) {
 	})
 
 	// Wrap with context handler
-	handler := &contextHandler{base: handlerWithAttrs}
+	handler := newContextHandler(handlerWithAttrs)
 
 	return slog.New(handler), nil
 }
 
-// WithLogCtx adds LogCtx to the context
-func WithLogCtx(ctx context.Context, logCtx *LogCtx) context.Context {
-	return context.WithValue(ctx, "log_ctx", logCtx)
-}
-
-// Enabled reports whether the handler handles records at the given level
-func (h *contextHandler) Enabled(ctx context.Context, level slog.Level) bool {
-	return h.base.Enabled(ctx, level)
-}
-
-// Handle handles the Record by extracting context attributes
-func (h *contextHandler) Handle(ctx context.Context, r slog.Record) error {
-	// Extract context attributes
-	contextAttrs := extractContextAttrs(ctx)
-
-	// Collect all attributes
-	allAttrs := make([]slog.Attr, 0, len(contextAttrs)+r.NumAttrs())
-	allAttrs = append(allAttrs, contextAttrs...)
-
-	// Add original attributes from record
-	r.Attrs(func(a slog.Attr) bool {
-		allAttrs = append(allAttrs, a)
-		return true
-	})
-
-	// Create new record with all attributes
-	newRecord := slog.NewRecord(r.Time, r.Level, r.Message, r.PC)
-	newRecord.AddAttrs(allAttrs...)
-
-	return h.base.Handle(ctx, newRecord)
-}
-
-// WithAttrs returns a new Handler with additional attributes
-func (h *contextHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
-	return &contextHandler{base: h.base.WithAttrs(attrs)}
-}
-
-// WithGroup returns a new Handler with a group
-func (h *contextHandler) WithGroup(name string) slog.Handler {
-	return &contextHandler{base: h.base.WithGroup(name)}
-}
-
-// extractContextAttrs extracts attributes from LogCtx in context
-func extractContextAttrs(ctx context.Context) []slog.Attr {
-	var attrs []slog.Attr
-
-	logCtx, ok := ctx.Value("log_ctx").(*LogCtx)
-	if !ok || logCtx == nil {
-		return attrs
-	}
-
-	if logCtx.UserID != nil {
-		attrs = append(attrs, slog.Any("user_id", logCtx.UserID))
-	}
-	if logCtx.RequestID != nil {
-		attrs = append(attrs, slog.Any("request_id", logCtx.RequestID))
-	}
-	if logCtx.TraceID != nil {
-		attrs = append(attrs, slog.Any("trace_id", logCtx.TraceID))
-	}
-	if logCtx.Operation != nil {
-		attrs = append(attrs, slog.Any("operation", logCtx.Operation))
-	}
-	if logCtx.Error != nil {
-		attrs = append(attrs, slog.Any("error", logCtx.Error))
-	}
-	if logCtx.Email != nil {
-		// Mask email for security
-		maskedEmail := utils.MaskEmail(logCtx.Email)
-		attrs = append(attrs, slog.String("email", maskedEmail))
-	}
-
-	return attrs
-}
-
-// getHostname returns system hostname
-func getHostname() string {
-	hostname, err := os.Hostname()
-	if err != nil {
-		return "unknown"
-	}
-	return hostname
+// ResetGlobalLogger resets the global logger state - used for testing only
+func ResetGlobalLogger() {
+	once = sync.Once{}
+	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
 }
