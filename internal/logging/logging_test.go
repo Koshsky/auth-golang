@@ -573,6 +573,62 @@ func (s *LoggingTestSuite) TestConcurrentContextModification() {
 	s.NotEmpty(s.buffer.String())
 }
 
+// TestThreadSafetyDataRace tests that context operations are thread-safe
+func (s *LoggingTestSuite) TestThreadSafetyDataRace() {
+	s.initLogging()
+
+	baseCtx := WithUserID(s.ctx, "base-user")
+
+	// Create a shared buffer to collect race-free operations
+	results := make(chan string, 200)
+	done := make(chan bool, 2)
+
+	// Goroutine 1: Creates many derived contexts and logs
+	go func() {
+		defer func() { done <- true }()
+		for i := 0; i < 100; i++ {
+			ctx := WithRequestID(baseCtx, fmt.Sprintf("req-%d", i))
+			ctx = WithOperation(ctx, fmt.Sprintf("op-%d", i))
+
+			// Extract the context data to verify no corruption
+			if logCtx, ok := ctx.Value("log_ctx").(*LogCtx); ok {
+				results <- fmt.Sprintf("G1: user=%v req=%v op=%v",
+					logCtx.UserID, logCtx.RequestID, logCtx.Operation)
+			}
+		}
+	}()
+
+	// Goroutine 2: Creates different derived contexts simultaneously
+	go func() {
+		defer func() { done <- true }()
+		for i := 0; i < 100; i++ {
+			ctx := WithTraceID(baseCtx, fmt.Sprintf("trace-%d", i))
+			ctx = WithEmail(ctx, fmt.Sprintf("user%d@test.com", i))
+
+			// Extract the context data to verify no corruption
+			if logCtx, ok := ctx.Value("log_ctx").(*LogCtx); ok {
+				results <- fmt.Sprintf("G2: user=%v trace=%v email=%v",
+					logCtx.UserID, logCtx.TraceID, logCtx.Email)
+			}
+		}
+	}()
+
+	// Wait for completion
+	<-done
+	<-done
+	close(results)
+
+	// Verify we got all expected results without corruption
+	resultCount := 0
+	for result := range results {
+		resultCount++
+		s.Contains(result, "user=base-user", "Base user should be preserved: %s", result)
+		// If there was data corruption, we might see mixed values or nil pointers
+	}
+
+	s.Equal(200, resultCount, "Should have 200 race-free operations")
+}
+
 // TestContextImmutability tests that context modifications don't affect original context
 func (s *LoggingTestSuite) TestContextImmutability() {
 	s.initLogging()
