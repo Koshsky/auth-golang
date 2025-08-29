@@ -19,19 +19,30 @@ type RabbitMQConfig struct {
 	Exchange string
 }
 
+type LogConfig struct {
+	ServiceName string
+	LogLevel    string // String representation: DEBUG, INFO, WARN, ERROR
+	Environment string
+	Version     string
+}
+
 type Config struct {
 	Database    DBConfig
 	RabbitMQ    RabbitMQConfig
+	Logging     LogConfig
 	JWTSecret   string
 	Port        string
 	TLSCertFile string
 	TLSKeyFile  string
 	EnableTLS   bool
+	Environment string
 }
 
 func LoadConfig() *Config {
 	// Load .env file if it exists, ignore error if file doesn't exist
 	_ = godotenv.Load()
+
+	environment := utils.GetEnv("ENVIRONMENT", "development")
 
 	db := DBConfig{
 		Host:     utils.GetEnv("AUTH_DB_HOST", "auth-db"),
@@ -47,13 +58,22 @@ func LoadConfig() *Config {
 		Exchange: utils.GetEnv("RABBITMQ_EXCHANGE", "user_events"),
 	}
 
+	logging := LogConfig{
+		ServiceName: utils.GetEnv("SERVICE_NAME", "auth-service"),
+		LogLevel:    utils.GetEnv("LOG_LEVEL", "INFO"),
+		Environment: environment,
+		Version:     utils.GetEnv("SERVICE_VERSION", "1.0.0"),
+	}
+
 	return &Config{
 		Database:    db,
 		RabbitMQ:    rabbitmq,
+		Logging:     logging,
 		JWTSecret:   utils.GetEnvRequiredWithValidation("JWT_SECRET", utils.ValidateMinLength(32)),
 		Port:        utils.GetEnvRequiredWithValidation("AUTH_SERVICE_PORT", utils.ValidatePort),
 		TLSCertFile: utils.GetEnv("TLS_CERT_FILE", "certs/server-cert.pem"),
 		TLSKeyFile:  utils.GetEnv("TLS_KEY_FILE", "certs/server-key.pem"),
 		EnableTLS:   utils.GetEnvBool("ENABLE_TLS", false),
+		Environment: environment,
 	}
 }
