@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"os"
 	"testing"
@@ -45,7 +46,6 @@ func (s *LoggingTestSuite) createSampleLogCtx() *LogCtx {
 		Email:     "user@example.com",
 		Operation: "test",
 		TraceID:   "trace-789",
-		Error:     "test error",
 	}
 }
 
@@ -76,9 +76,7 @@ func (s *LoggingTestSuite) assertLogCtxFields(logCtx *LogCtx, expected map[strin
 	if traceID, ok := expected["trace_id"]; ok {
 		s.Equal(traceID, logCtx.TraceID)
 	}
-	if errorMsg, ok := expected["error"]; ok {
-		s.Equal(errorMsg, logCtx.Error)
-	}
+
 }
 
 func (s *LoggingTestSuite) TestInitLogging_ValidConfig() {
@@ -241,12 +239,6 @@ func (s *LoggingTestSuite) TestWithOperation() {
 	s.assertLogCtxFields(logCtx, map[string]interface{}{"operation": "user_authentication"})
 }
 
-func (s *LoggingTestSuite) TestWithError() {
-	ctx := WithError(s.ctx, "authentication failed")
-	logCtx := s.getLogCtxFromContext(ctx)
-	s.assertLogCtxFields(logCtx, map[string]interface{}{"error": "authentication failed"})
-}
-
 func (s *LoggingTestSuite) TestWithEmail() {
 	ctx := WithEmail(s.ctx, "test@example.com")
 	logCtx := s.getLogCtxFromContext(ctx)
@@ -268,7 +260,7 @@ func (s *LoggingTestSuite) TestChainedContextMethods() {
 		"email":      "chain@test.com",
 	})
 	s.Nil(logCtx.TraceID)
-	s.Nil(logCtx.Error)
+
 }
 
 func (s *LoggingTestSuite) TestGetOrCreateLogCtx_NewContext() {
@@ -284,9 +276,18 @@ func (s *LoggingTestSuite) TestGetOrCreateLogCtx_ExistingContext() {
 	ctx := WithLogCtx(s.ctx, existingLogCtx)
 
 	logCtx, newCtx := getOrCreateLogCtx(ctx)
-	s.Equal(existingLogCtx, logCtx)
-	s.Equal(ctx, newCtx)
-	s.Equal(789, logCtx.UserID)
+
+	// Should return a copy, not the original pointer (to prevent data races)
+	s.True(existingLogCtx != logCtx, "Should return a copy to prevent data races - different pointer addresses")
+	s.NotEqual(ctx, newCtx, "Should return new context with copied LogCtx")
+	s.Equal(789, logCtx.UserID, "Should preserve the UserID value")
+
+	// Verify the copy has the same values but different pointer
+	s.Equal(existingLogCtx.UserID, logCtx.UserID)
+	s.Equal(existingLogCtx.RequestID, logCtx.RequestID)
+	s.Equal(existingLogCtx.TraceID, logCtx.TraceID)
+	s.Equal(existingLogCtx.Operation, logCtx.Operation)
+	s.Equal(existingLogCtx.Email, logCtx.Email)
 }
 
 func (s *LoggingTestSuite) TestGetOrCreateLogCtx_NilExistingContext() {
@@ -323,7 +324,7 @@ func (s *LoggingTestSuite) TestWithMultiple_PartialFields() {
 	s.assertLogCtxFields(logCtx, fields)
 	s.Nil(logCtx.RequestID)
 	s.Nil(logCtx.TraceID)
-	s.Nil(logCtx.Error)
+
 	s.Nil(logCtx.Email)
 }
 
@@ -343,7 +344,7 @@ func (s *LoggingTestSuite) TestWithMultiple_UnknownFields() {
 	})
 	s.Nil(logCtx.TraceID)
 	s.Nil(logCtx.Operation)
-	s.Nil(logCtx.Error)
+
 	s.Nil(logCtx.Email)
 }
 
@@ -355,7 +356,7 @@ func (s *LoggingTestSuite) TestWithMultiple_EmptyFields() {
 	s.Nil(logCtx.RequestID)
 	s.Nil(logCtx.TraceID)
 	s.Nil(logCtx.Operation)
-	s.Nil(logCtx.Error)
+
 	s.Nil(logCtx.Email)
 }
 
@@ -424,7 +425,7 @@ func (s *LoggingTestSuite) TestExtractContextAttrs_AllFields() {
 	ctx := WithLogCtx(s.ctx, logCtx)
 
 	attrs := extractContextAttrs(ctx)
-	s.Len(attrs, 6)
+	s.Len(attrs, 5)
 
 	attrMap := make(map[string]interface{})
 	for _, attr := range attrs {
@@ -435,7 +436,6 @@ func (s *LoggingTestSuite) TestExtractContextAttrs_AllFields() {
 	s.Equal("req-456", attrMap["request_id"])
 	s.Equal("trace-789", attrMap["trace_id"])
 	s.Equal("test", attrMap["operation"])
-	s.Equal("test error", attrMap["error"])
 	s.Equal("u***@example.com", attrMap["email"])
 }
 
@@ -503,12 +503,11 @@ func (s *LoggingTestSuite) TestContextMethods_WithDifferentTypes() {
 	ctx := s.ctx
 	ctx = WithUserID(ctx, "string_user_id")
 	ctx = WithRequestID(ctx, 12345)
-	ctx = WithError(ctx, &LogCtx{})
 
 	logCtx := s.getLogCtxFromContext(ctx)
 	s.Equal("string_user_id", logCtx.UserID)
 	s.Equal(12345, logCtx.RequestID)
-	s.IsType(&LogCtx{}, logCtx.Error)
+
 }
 
 func (s *LoggingTestSuite) TestWithMultiple_WithNilMap() {
@@ -519,7 +518,7 @@ func (s *LoggingTestSuite) TestWithMultiple_WithNilMap() {
 	s.Nil(logCtx.RequestID)
 	s.Nil(logCtx.TraceID)
 	s.Nil(logCtx.Operation)
-	s.Nil(logCtx.Error)
+
 	s.Nil(logCtx.Email)
 }
 
@@ -530,29 +529,89 @@ func (s *LoggingTestSuite) TestContextModification_Immutability() {
 	originalLogCtx, _ := originalCtx.Value("log_ctx").(*LogCtx)
 	newLogCtx, _ := newCtx.Value("log_ctx").(*LogCtx)
 
+	// Original context should not be modified
 	s.Equal(123, originalLogCtx.UserID)
-	s.Equal("new-req", originalLogCtx.RequestID)
+	s.Empty(originalLogCtx.RequestID) // Original should not have RequestID
+
+	// New context should have both values
 	s.Equal(123, newLogCtx.UserID)
 	s.Equal("new-req", newLogCtx.RequestID)
-	s.Equal(originalLogCtx, newLogCtx)
+
+	// LogCtx pointers should be different (no sharing)
+	s.NotEqual(originalLogCtx, newLogCtx, "LogCtx should be copied to prevent data races")
 }
 
 func (s *LoggingTestSuite) TestConcurrentContextModification() {
-	baseCtx := WithUserID(s.ctx, 999)
+	s.initLogging()
 
-	ctx1 := WithRequestID(baseCtx, "req-1")
-	ctx2 := WithRequestID(baseCtx, "req-2")
-	ctx3 := WithOperation(baseCtx, "op-3")
+	baseCtx := WithUserID(s.ctx, "user123")
 
-	logCtx1, _ := ctx1.Value("log_ctx").(*LogCtx)
-	logCtx2, _ := ctx2.Value("log_ctx").(*LogCtx)
-	logCtx3, _ := ctx3.Value("log_ctx").(*LogCtx)
+	done := make(chan bool, 2)
 
-	s.Equal(logCtx1, logCtx2)
-	s.Equal(logCtx2, logCtx3)
-	s.Equal("req-2", logCtx1.RequestID)
-	s.Equal("op-3", logCtx1.Operation)
-	s.Equal(999, logCtx1.UserID)
+	// Goroutine 1: modifies request ID
+	go func() {
+		defer func() { done <- true }()
+		for i := 0; i < 100; i++ {
+			ctx := WithRequestID(baseCtx, fmt.Sprintf("req-%d", i))
+			slog.InfoContext(ctx, "Request processed")
+		}
+	}()
+
+	// Goroutine 2: modifies trace ID
+	go func() {
+		defer func() { done <- true }()
+		for i := 0; i < 100; i++ {
+			ctx := WithTraceID(baseCtx, fmt.Sprintf("trace-%d", i))
+			slog.InfoContext(ctx, "Trace logged")
+		}
+	}()
+
+	// Wait for completion
+	<-done
+	<-done
+
+	s.NotEmpty(s.buffer.String())
+}
+
+// TestContextImmutability tests that context modifications don't affect original context
+func (s *LoggingTestSuite) TestContextImmutability() {
+	s.initLogging()
+
+	// Create base context with user ID
+	baseCtx := WithUserID(s.ctx, "original-user")
+
+	// Create derived context with different user ID
+	derivedCtx := WithUserID(baseCtx, "derived-user")
+
+	// Verify that LogCtx pointers are different (no sharing)
+	baseLogCtx, _ := baseCtx.Value("log_ctx").(*LogCtx)
+	derivedLogCtx, _ := derivedCtx.Value("log_ctx").(*LogCtx)
+
+	s.NotEqual(baseLogCtx, derivedLogCtx, "LogCtx pointers should be different to prevent data races")
+
+	// Log from base context
+	s.buffer.Reset()
+	slog.InfoContext(baseCtx, "Base context message")
+	baseOutput := s.buffer.String()
+
+	// Log from derived context
+	s.buffer.Reset()
+	slog.InfoContext(derivedCtx, "Derived context message")
+	derivedOutput := s.buffer.String()
+
+	// Parse JSON outputs
+	var baseLog, derivedLog map[string]interface{}
+	err := json.Unmarshal([]byte(baseOutput), &baseLog)
+	s.NoError(err)
+	err = json.Unmarshal([]byte(derivedOutput), &derivedLog)
+	s.NoError(err)
+
+	// Verify base context wasn't modified
+	s.Equal("original-user", baseLog["user_id"])
+	s.Equal("derived-user", derivedLog["user_id"])
+
+	// They should be different
+	s.NotEqual(baseLog["user_id"], derivedLog["user_id"])
 }
 
 func (s *LoggingTestSuite) TestLoggingIntegration_WithIndividualMethods() {
@@ -611,7 +670,6 @@ func (s *LoggingTestSuite) TestLoggingIntegration_MixedMethods() {
 	ctx = WithEmail(ctx, "mixed@example.com")
 	ctx = WithMultiple(ctx, map[string]interface{}{
 		"trace_id": "trace-mixed-456",
-		"error":    "mixed error message",
 	})
 
 	slog.ErrorContext(ctx, "Integration test mixing methods")
@@ -622,7 +680,6 @@ func (s *LoggingTestSuite) TestLoggingIntegration_MixedMethods() {
 	s.Equal("mixed_operation", logEntry["operation"])
 	s.Equal("m****@example.com", logEntry["email"])
 	s.Equal("trace-mixed-456", logEntry["trace_id"])
-	s.Equal("mixed error message", logEntry["error"])
 	s.Equal("Integration test mixing methods", logEntry["message"])
 	s.Equal("ERROR", logEntry["level"])
 }
@@ -658,7 +715,6 @@ func (s *LoggingTestSuite) TestContextLogging_WithLogCtx() {
 	s.Equal("u***@example.com", logEntry["email"])
 	s.Equal("test", logEntry["operation"])
 	s.Equal("trace-789", logEntry["trace_id"])
-	s.Equal("test error", logEntry["error"])
 	s.Equal("test-service", logEntry["service"])
 	s.Equal("test", logEntry["environment"])
 	s.Equal("1.0.0", logEntry["version"])
@@ -733,7 +789,7 @@ func (s *LoggingTestSuite) TestSlogContextLevels() {
 	}{
 		{slog.InfoContext, "INFO", &LogCtx{UserID: 789}},
 		{slog.WarnContext, "WARN", &LogCtx{Operation: "test-op"}},
-		{slog.ErrorContext, "ERROR", &LogCtx{Error: "context error"}},
+		{slog.ErrorContext, "ERROR", &LogCtx{Operation: "error-op"}},
 	}
 
 	for _, tc := range testCases {

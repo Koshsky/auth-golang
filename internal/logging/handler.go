@@ -73,9 +73,6 @@ func extractContextAttrs(ctx context.Context) []slog.Attr {
 	if logCtx.Operation != nil {
 		attrs = append(attrs, slog.Any("operation", logCtx.Operation))
 	}
-	if logCtx.Error != nil {
-		attrs = append(attrs, slog.Any("error", logCtx.Error))
-	}
 	if logCtx.Email != nil {
 		// Mask email for security
 		maskedEmail := utils.MaskEmail(logCtx.Email)

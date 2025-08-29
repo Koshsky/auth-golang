@@ -33,7 +33,6 @@ type LogCtx struct {
 	RequestID interface{} `json:"request_id,omitempty"`
 	TraceID   interface{} `json:"trace_id,omitempty"`
 	Operation interface{} `json:"operation,omitempty"`
-	Error     interface{} `json:"error,omitempty"`
 	Email     interface{} `json:"email,omitempty"`
 }
 
@@ -43,11 +42,21 @@ func WithLogCtx(ctx context.Context, logCtx *LogCtx) context.Context {
 }
 
 // getOrCreateLogCtx gets existing LogCtx from context or creates a new one
+// Always returns a copy to prevent data races between goroutines
 func getOrCreateLogCtx(ctx context.Context) (*LogCtx, context.Context) {
+	var newLogCtx *LogCtx
 	if existing, ok := ctx.Value("log_ctx").(*LogCtx); ok && existing != nil {
-		return existing, ctx
+		// Create a copy of the existing LogCtx to prevent data races
+		newLogCtx = &LogCtx{
+			UserID:    existing.UserID,
+			RequestID: existing.RequestID,
+			TraceID:   existing.TraceID,
+			Operation: existing.Operation,
+			Email:     existing.Email,
+		}
+	} else {
+		newLogCtx = &LogCtx{}
 	}
-	newLogCtx := &LogCtx{}
 	return newLogCtx, context.WithValue(ctx, "log_ctx", newLogCtx)
 }
 
@@ -79,13 +88,6 @@ func WithOperation(ctx context.Context, operation interface{}) context.Context {
 	return newCtx
 }
 
-// WithError adds error to the logging context
-func WithError(ctx context.Context, err interface{}) context.Context {
-	logCtx, newCtx := getOrCreateLogCtx(ctx)
-	logCtx.Error = err
-	return newCtx
-}
-
 // WithEmail adds email to the logging context
 func WithEmail(ctx context.Context, email interface{}) context.Context {
 	logCtx, newCtx := getOrCreateLogCtx(ctx)
@@ -107,8 +109,6 @@ func WithMultiple(ctx context.Context, fields map[string]interface{}) context.Co
 			logCtx.TraceID = value
 		case "operation":
 			logCtx.Operation = value
-		case "error":
-			logCtx.Error = value
 		case "email":
 			logCtx.Email = value
 		}
