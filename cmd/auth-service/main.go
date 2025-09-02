@@ -8,6 +8,7 @@ import (
 
 	"github.com/Koshsky/subs-service/auth-service/internal/authpb"
 	"github.com/Koshsky/subs-service/auth-service/internal/config"
+	"github.com/Koshsky/subs-service/auth-service/internal/interceptors"
 	"github.com/Koshsky/subs-service/auth-service/internal/logging"
 	"github.com/Koshsky/subs-service/auth-service/internal/messaging"
 	"github.com/Koshsky/subs-service/auth-service/internal/repositories"
@@ -48,6 +49,28 @@ func setupServices(ctx context.Context, cfg *config.Config) (*services.AuthServi
 func createGRPCServer(ctx context.Context, cfg *config.Config) (*grpc.Server, error) {
 	ctx = logging.WithOperation(ctx, "create_grpc_server")
 
+	// Create interceptor manager and add logging interceptor
+	interceptorManager := interceptors.NewInterceptorManager()
+	loggingInterceptor := interceptors.NewLoggingInterceptor(slog.Default())
+	interceptorManager.AddLoggingInterceptor(loggingInterceptor)
+
+	// Get interceptors
+	unaryInterceptors := interceptorManager.GetUnaryInterceptors()
+	streamInterceptors := interceptorManager.GetStreamInterceptors()
+
+	// Create gRPC server options
+	var grpcOptions []grpc.ServerOption
+
+	// Add unary interceptors
+	if len(unaryInterceptors) > 0 {
+		grpcOptions = append(grpcOptions, grpc.ChainUnaryInterceptor(unaryInterceptors...))
+	}
+
+	// Add stream interceptors
+	if len(streamInterceptors) > 0 {
+		grpcOptions = append(grpcOptions, grpc.ChainStreamInterceptor(streamInterceptors...))
+	}
+
 	var grpcServer *grpc.Server
 
 	if cfg.EnableTLS {
@@ -58,13 +81,18 @@ func createGRPCServer(ctx context.Context, cfg *config.Config) (*grpc.Server, er
 			slog.ErrorContext(ctx, "Failed to load TLS credentials", "error", err)
 			return nil, err
 		}
-		grpcServer = grpc.NewServer(grpc.Creds(creds))
+		grpcOptions = append(grpcOptions, grpc.Creds(creds))
+		grpcServer = grpc.NewServer(grpcOptions...)
 		slog.InfoContext(ctx, "gRPC server created with TLS")
 	} else {
 		slog.InfoContext(ctx, "Initializing gRPC server without TLS")
-		grpcServer = grpc.NewServer()
+		grpcServer = grpc.NewServer(grpcOptions...)
 		slog.InfoContext(ctx, "gRPC server created without TLS")
 	}
+
+	slog.InfoContext(ctx, "gRPC server created with interceptors",
+		"unary_interceptors", len(unaryInterceptors),
+		"stream_interceptors", len(streamInterceptors))
 
 	return grpcServer, nil
 }
