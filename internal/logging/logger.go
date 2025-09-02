@@ -18,7 +18,15 @@ var (
 
 // InitLogging initializes global slog logger configuration
 func InitLogging(config config.LogConfig) error {
-	return InitLoggingWithOutput(config, os.Stdout)
+	err := InitLoggingWithOutput(config, os.Stdout)
+	if err == nil {
+		// Log service startup information
+		slog.Info("Logging initialized",
+			"service", config.ServiceName,
+			"version", config.Version,
+			"environment", config.Environment)
+	}
+	return err
 }
 
 // InitLoggingWithOutput initializes logging with custom output (for testing)

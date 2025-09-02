@@ -98,9 +98,7 @@ func main() {
 	ctx := context.Background()
 	ctx = logging.WithOperation(ctx, "main")
 
-	slog.InfoContext(ctx, "Starting auth service",
-		"version", cfg.Logging.Version,
-		"environment", cfg.Environment)
+	slog.InfoContext(ctx, "Starting auth service")
 
 	// Setup services
 	_, authServer, err := setupServices(ctx, cfg)

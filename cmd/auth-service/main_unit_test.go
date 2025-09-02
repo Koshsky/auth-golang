@@ -96,7 +96,6 @@ func TestConfigValidation(t *testing.T) {
 			EnableTLS:   false,
 			TLSCertFile: "",
 			TLSKeyFile:  "",
-			Environment: "test",
 		}
 
 		// Act & Assert
@@ -113,7 +112,6 @@ func TestConfigValidation(t *testing.T) {
 		assert.NotEmpty(t, cfg.Logging.Version)
 		assert.NotEmpty(t, cfg.JWTSecret)
 		assert.NotEmpty(t, cfg.Port)
-		assert.NotEmpty(t, cfg.Environment)
 	})
 
 	t.Run("EmptyDatabaseConfig", func(t *testing.T) {

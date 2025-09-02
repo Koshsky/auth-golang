@@ -35,7 +35,6 @@ type Config struct {
 	TLSCertFile string
 	TLSKeyFile  string
 	EnableTLS   bool
-	Environment string
 }
 
 func LoadConfig() *Config {
@@ -74,6 +73,5 @@ func LoadConfig() *Config {
 		TLSCertFile: utils.GetEnv("TLS_CERT_FILE", "certs/server-cert.pem"),
 		TLSKeyFile:  utils.GetEnv("TLS_KEY_FILE", "certs/server-key.pem"),
 		EnableTLS:   utils.GetEnvBool("ENABLE_TLS", false),
-		Environment: environment,
 	}
 }
