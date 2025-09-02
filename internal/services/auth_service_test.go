@@ -8,9 +8,8 @@ import (
 	"time"
 
 	"github.com/Koshsky/subs-service/auth-service/internal/config"
-	messagingMocks "github.com/Koshsky/subs-service/auth-service/internal/messaging/mocks"
+	"github.com/Koshsky/subs-service/auth-service/internal/contracts/mocks"
 	"github.com/Koshsky/subs-service/auth-service/internal/models"
-	repositoryMocks "github.com/Koshsky/subs-service/auth-service/internal/repositories/mocks"
 	"github.com/Koshsky/subs-service/auth-service/internal/services"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
@@ -21,8 +20,8 @@ import (
 
 type AuthServiceTestSuite struct {
 	suite.Suite
-	mockUserRepo      *repositoryMocks.IUserRepository
-	mockMessageBroker *messagingMocks.IMessageBroker
+	mockUserRepo      *mocks.IUserRepository
+	mockMessageBroker *mocks.IMessageBroker
 	authService       *services.AuthService
 	ctx               context.Context
 	config            *config.Config
@@ -46,8 +45,8 @@ func (suite *AuthServiceTestSuite) SetupSuite() {
 }
 
 func (suite *AuthServiceTestSuite) SetupTest() {
-	suite.mockUserRepo = repositoryMocks.NewIUserRepository(suite.T())
-	suite.mockMessageBroker = messagingMocks.NewIMessageBroker(suite.T())
+	suite.mockUserRepo = mocks.NewIUserRepository(suite.T())
+	suite.mockMessageBroker = mocks.NewIMessageBroker(suite.T())
 
 	suite.authService = services.NewAuthService(suite.mockUserRepo, suite.mockMessageBroker, suite.config)
 	suite.ctx = context.Background()

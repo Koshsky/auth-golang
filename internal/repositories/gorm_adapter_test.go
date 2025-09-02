@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/Koshsky/subs-service/auth-service/internal/config"
+	"github.com/Koshsky/subs-service/auth-service/internal/contracts"
 	"github.com/Koshsky/subs-service/auth-service/internal/repositories"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/driver/sqlite"
@@ -21,7 +22,7 @@ type TestUser struct {
 }
 
 // setupTestDB creates in-memory SQLite database for tests
-func (suite *GormAdapterTestSuite) setupTestDB() (*gorm.DB, repositories.IDatabase) {
+func (suite *GormAdapterTestSuite) setupTestDB() (*gorm.DB, contracts.IDatabase) {
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	suite.Require().NoError(err)
 

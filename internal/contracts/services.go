@@ -1,4 +1,4 @@
-package services
+package contracts
 
 import (
 	"context"
@@ -14,6 +14,3 @@ type IAuthService interface {
 	ValidateToken(ctx context.Context, tokenString string) (jwt.MapClaims, error)
 	GenerateJWTToken(user *models.User) (string, error)
 }
-
-// Interface compliance checks - will fail at compile time if interfaces are not implemented
-var _ IAuthService = (*AuthService)(nil)

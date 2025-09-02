@@ -4,9 +4,9 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/Koshsky/subs-service/auth-service/internal/contracts/mocks"
 	"github.com/Koshsky/subs-service/auth-service/internal/models"
 	"github.com/Koshsky/subs-service/auth-service/internal/repositories"
-	"github.com/Koshsky/subs-service/auth-service/internal/repositories/mocks"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"

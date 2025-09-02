@@ -16,12 +16,12 @@ import (
 )
 
 type LoggingInterceptor struct {
-	logger *slog.Logger
+	Logger *slog.Logger
 }
 
 func NewLoggingInterceptor(logger *slog.Logger) *LoggingInterceptor {
 	return &LoggingInterceptor{
-		logger: logger,
+		Logger: logger,
 	}
 }
 
@@ -36,9 +36,9 @@ func (i *LoggingInterceptor) UnaryServerInterceptor() grpc.UnaryServerIntercepto
 
 		logCtx := i.extractLoggingContext(ctx)
 
-		i.logger.InfoContext(logCtx, "gRPC request started",
+		i.Logger.InfoContext(logCtx, "gRPC request started",
 			"method", info.FullMethod,
-			"request_type", getRequestType(req),
+			"request_type", GetRequestType(req),
 		)
 
 		resp, err := handler(logCtx, req)
@@ -62,7 +62,7 @@ func (i *LoggingInterceptor) StreamServerInterceptor() grpc.StreamServerIntercep
 
 		logCtx := i.extractLoggingContext(stream.Context())
 
-		i.logger.InfoContext(logCtx, "gRPC stream started",
+		i.Logger.InfoContext(logCtx, "gRPC stream started",
 			"method", info.FullMethod,
 			"is_client_stream", info.IsClientStream,
 			"is_server_stream", info.IsServerStream,
@@ -110,7 +110,7 @@ func (i *LoggingInterceptor) logRequestCompletion(
 
 	if err != nil {
 		if st, ok := status.FromError(err); ok {
-			level = getLogLevelForStatusCode(st.Code())
+			level = GetLogLevelForStatusCode(st.Code())
 			message = "gRPC request completed with error"
 			additionalFields = []interface{}{
 				"method", method,
@@ -138,17 +138,17 @@ func (i *LoggingInterceptor) logRequestCompletion(
 
 	switch level {
 	case slog.LevelDebug:
-		i.logger.DebugContext(ctx, message, additionalFields...)
+		i.Logger.DebugContext(ctx, message, additionalFields...)
 	case slog.LevelInfo:
-		i.logger.InfoContext(ctx, message, additionalFields...)
+		i.Logger.InfoContext(ctx, message, additionalFields...)
 	case slog.LevelWarn:
-		i.logger.WarnContext(ctx, message, additionalFields...)
+		i.Logger.WarnContext(ctx, message, additionalFields...)
 	case slog.LevelError:
-		i.logger.ErrorContext(ctx, message, additionalFields...)
+		i.Logger.ErrorContext(ctx, message, additionalFields...)
 	}
 }
 
-func getLogLevelForStatusCode(code codes.Code) slog.Level {
+func GetLogLevelForStatusCode(code codes.Code) slog.Level {
 	switch code {
 	case codes.OK:
 		return slog.LevelInfo
@@ -166,8 +166,8 @@ func getLogLevelForStatusCode(code codes.Code) slog.Level {
 	}
 }
 
-// getRequestType extracts the type name from the request interface using reflection
-func getRequestType(req interface{}) string {
+// GetRequestType extracts the type name from the request interface using reflection
+func GetRequestType(req interface{}) string {
 	if req == nil {
 		return "nil"
 	}

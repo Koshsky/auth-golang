@@ -6,9 +6,9 @@ import (
 	"testing"
 
 	"github.com/Koshsky/subs-service/auth-service/internal/authpb"
+	"github.com/Koshsky/subs-service/auth-service/internal/contracts/mocks"
 	"github.com/Koshsky/subs-service/auth-service/internal/models"
 	"github.com/Koshsky/subs-service/auth-service/internal/server"
-	"github.com/Koshsky/subs-service/auth-service/internal/services/mocks"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/suite"
