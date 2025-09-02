@@ -6,6 +6,7 @@ import (
 	context "context"
 
 	jwt "github.com/golang-jwt/jwt/v5"
+
 	mock "github.com/stretchr/testify/mock"
 
 	models "github.com/Koshsky/subs-service/auth-service/internal/models"

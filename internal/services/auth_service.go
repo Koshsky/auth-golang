@@ -7,22 +7,21 @@ import (
 	"time"
 
 	"github.com/Koshsky/subs-service/auth-service/internal/config"
-	"github.com/Koshsky/subs-service/auth-service/internal/messaging"
+	"github.com/Koshsky/subs-service/auth-service/internal/contracts"
 	"github.com/Koshsky/subs-service/auth-service/internal/models"
-	"github.com/Koshsky/subs-service/auth-service/internal/repositories"
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 )
 
 // AuthService implements authentication business logic
 type AuthService struct {
-	userRepo      repositories.IUserRepository
-	messageBroker messaging.IMessageBroker
+	userRepo      contracts.IUserRepository
+	messageBroker contracts.IMessageBroker
 	JWTSecret     []byte
 }
 
 // NewAuthService creates a new AuthService instance
-func NewAuthService(userRepo repositories.IUserRepository, messageBroker messaging.IMessageBroker, cfg *config.Config) *AuthService {
+func NewAuthService(userRepo contracts.IUserRepository, messageBroker contracts.IMessageBroker, cfg *config.Config) *AuthService {
 	if cfg == nil || cfg.JWTSecret == "" {
 		return &AuthService{
 			userRepo:      userRepo,

@@ -1,4 +1,4 @@
-package messaging
+package contracts
 
 import (
 	"context"
@@ -27,8 +27,3 @@ type IRabbitMQPublisher interface {
 	NotifyPublish(handler func(p rabbitmq.Confirmation))
 	NotifyReturn(handler func(r rabbitmq.Return))
 }
-
-// Interface compliance checks - will fail at compile time if interfaces are not implemented
-var _ IMessageBroker = (*RabbitMQAdapter)(nil)
-var _ IRabbitMQConn = (*rabbitmq.Conn)(nil)
-var _ IRabbitMQPublisher = (*rabbitmq.Publisher)(nil)

@@ -1,23 +1,24 @@
-package messaging
+package messaging_test
 
 import (
 	"fmt"
 	"testing"
 
 	"github.com/Koshsky/subs-service/auth-service/internal/config"
+	"github.com/Koshsky/subs-service/auth-service/internal/contracts"
+	"github.com/Koshsky/subs-service/auth-service/internal/contracts/mocks"
+	"github.com/Koshsky/subs-service/auth-service/internal/messaging"
 	"github.com/Koshsky/subs-service/auth-service/internal/models"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
-
-	messagingMocks "github.com/Koshsky/subs-service/auth-service/internal/messaging/mocks"
 )
 
 type RabbitMQAdapterTestSuite struct {
 	suite.Suite
-	mockPublisher *messagingMocks.IRabbitMQPublisher
-	mockConn      *messagingMocks.IRabbitMQConn
-	adapter       IMessageBroker
+	mockPublisher *mocks.IRabbitMQPublisher
+	mockConn      *mocks.IRabbitMQConn
+	adapter       contracts.IMessageBroker
 	config        config.RabbitMQConfig
 	testUser      *models.User
 }
@@ -33,12 +34,12 @@ func (suite *RabbitMQAdapterTestSuite) SetupTest() {
 	suite.config = config.RabbitMQConfig{
 		Exchange: "test_exchange",
 	}
-	suite.mockPublisher = messagingMocks.NewIRabbitMQPublisher(suite.T())
-	suite.mockConn = messagingMocks.NewIRabbitMQConn(suite.T())
-	suite.adapter = &RabbitMQAdapter{
-		publisher: suite.mockPublisher,
-		conn:      suite.mockConn,
-		config:    suite.config,
+	suite.mockPublisher = mocks.NewIRabbitMQPublisher(suite.T())
+	suite.mockConn = mocks.NewIRabbitMQConn(suite.T())
+	suite.adapter = &messaging.RabbitMQAdapter{
+		Publisher: suite.mockPublisher,
+		Conn:      suite.mockConn,
+		Config:    suite.config,
 	}
 }
 
@@ -75,7 +76,7 @@ func (suite *RabbitMQAdapterTestSuite) TestNewRabbitMQAdapter_InvalidConfig() {
 	}
 
 	// Act
-	adapter, err := NewRabbitMQAdapter(cfg)
+	adapter, err := messaging.NewRabbitMQAdapter(cfg)
 
 	// Assert
 	suite.Require().Error(err)
@@ -102,10 +103,10 @@ func (suite *RabbitMQAdapterTestSuite) TestPublishUserCreated_Success() {
 
 func (suite *RabbitMQAdapterTestSuite) TestPublishUserCreated_NilPublisher() {
 	// Arrange
-	adapter := &RabbitMQAdapter{
-		publisher: nil,
-		conn:      suite.mockConn,
-		config:    suite.config,
+	adapter := &messaging.RabbitMQAdapter{
+		Publisher: nil,
+		Conn:      suite.mockConn,
+		Config:    suite.config,
 	}
 
 	// Act
@@ -158,10 +159,10 @@ func (suite *RabbitMQAdapterTestSuite) TestPublishUserDeleted_Success() {
 
 func (suite *RabbitMQAdapterTestSuite) TestPublishUserDeleted_NilPublisher() {
 	// Arrange
-	adapter := &RabbitMQAdapter{
-		publisher: nil,
-		conn:      suite.mockConn,
-		config:    suite.config,
+	adapter := &messaging.RabbitMQAdapter{
+		Publisher: nil,
+		Conn:      suite.mockConn,
+		Config:    suite.config,
 	}
 
 	// Act

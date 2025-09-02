@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/Koshsky/subs-service/auth-service/internal/config"
+	"github.com/Koshsky/subs-service/auth-service/internal/contracts"
 	"github.com/Koshsky/subs-service/auth-service/internal/models"
 	"github.com/google/uuid"
 	"github.com/wagslane/go-rabbitmq"
@@ -13,9 +14,9 @@ import (
 
 // RabbitMQAdapter implements IMessageBroker for RabbitMQ
 type RabbitMQAdapter struct {
-	publisher IRabbitMQPublisher
-	conn      IRabbitMQConn
-	config    config.RabbitMQConfig
+	Publisher contracts.IRabbitMQPublisher
+	Conn      contracts.IRabbitMQConn
+	Config    config.RabbitMQConfig
 }
 
 type UserCreatedEvent struct {
@@ -28,7 +29,7 @@ type UserDeletedEvent struct {
 }
 
 // NewRabbitMQAdapter creates a new RabbitMQ adapter
-func NewRabbitMQAdapter(rabbitmqConfig config.RabbitMQConfig) (IMessageBroker, error) {
+func NewRabbitMQAdapter(rabbitmqConfig config.RabbitMQConfig) (contracts.IMessageBroker, error) {
 	// Create connection with automatic reconnection
 	conn, err := rabbitmq.NewConn(
 		rabbitmqConfig.URL,
@@ -54,15 +55,15 @@ func NewRabbitMQAdapter(rabbitmqConfig config.RabbitMQConfig) (IMessageBroker, e
 	}
 
 	return &RabbitMQAdapter{
-		publisher: publisher,
-		conn:      conn,
-		config:    rabbitmqConfig,
+		Publisher: publisher,
+		Conn:      conn,
+		Config:    rabbitmqConfig,
 	}, nil
 }
 
 // PublishUserCreated publishes user created event to RabbitMQ
 func (r *RabbitMQAdapter) PublishUserCreated(user *models.User) error {
-	if r.publisher == nil {
+	if r.Publisher == nil {
 		return errors.New("publisher is not initialized")
 	}
 
@@ -80,11 +81,11 @@ func (r *RabbitMQAdapter) PublishUserCreated(user *models.User) error {
 		return fmt.Errorf("failed to marshal user created event: %v", err)
 	}
 
-	err = r.publisher.Publish(
+	err = r.Publisher.Publish(
 		body,
 		[]string{"user.created"},
 		rabbitmq.WithPublishOptionsContentType("application/json"),
-		rabbitmq.WithPublishOptionsExchange(r.config.Exchange),
+		rabbitmq.WithPublishOptionsExchange(r.Config.Exchange),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to publish user created event: %v", err)
@@ -94,7 +95,7 @@ func (r *RabbitMQAdapter) PublishUserCreated(user *models.User) error {
 }
 
 func (r *RabbitMQAdapter) PublishUserDeleted(user *models.User) error {
-	if r.publisher == nil {
+	if r.Publisher == nil {
 		return errors.New("publisher is not initialized")
 	}
 
@@ -111,11 +112,11 @@ func (r *RabbitMQAdapter) PublishUserDeleted(user *models.User) error {
 		return fmt.Errorf("failed to marshal user deleted event: %v", err)
 	}
 
-	err = r.publisher.Publish(
+	err = r.Publisher.Publish(
 		body,
 		[]string{"user.deleted"},
 		rabbitmq.WithPublishOptionsContentType("application/json"),
-		rabbitmq.WithPublishOptionsExchange(r.config.Exchange),
+		rabbitmq.WithPublishOptionsExchange(r.Config.Exchange),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to publish user deleted event: %v", err)
@@ -126,10 +127,10 @@ func (r *RabbitMQAdapter) PublishUserDeleted(user *models.User) error {
 
 // Close closes the RabbitMQ connection
 func (r *RabbitMQAdapter) Close() {
-	if r.publisher != nil {
-		r.publisher.Close()
+	if r.Publisher != nil {
+		r.Publisher.Close()
 	}
-	if r.conn != nil {
-		r.conn.Close()
+	if r.Conn != nil {
+		r.Conn.Close()
 	}
 }

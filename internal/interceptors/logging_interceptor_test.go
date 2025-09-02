@@ -1,4 +1,4 @@
-package interceptors
+package interceptors_test
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/Koshsky/subs-service/auth-service/internal/authpb"
+	"github.com/Koshsky/subs-service/auth-service/internal/interceptors"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 	"google.golang.org/grpc"
@@ -17,15 +18,15 @@ import (
 type InterceptorsTestSuite struct {
 	suite.Suite
 	logger      *slog.Logger
-	interceptor *LoggingInterceptor
-	manager     *InterceptorManager
+	interceptor *interceptors.LoggingInterceptor
+	manager     *interceptors.InterceptorManager
 	ctx         context.Context
 }
 
 func (s *InterceptorsTestSuite) SetupTest() {
 	s.logger = slog.Default()
-	s.interceptor = NewLoggingInterceptor(s.logger)
-	s.manager = NewInterceptorManager()
+	s.interceptor = interceptors.NewLoggingInterceptor(s.logger)
+	s.manager = interceptors.NewInterceptorManager()
 	s.ctx = context.Background()
 }
 
@@ -57,10 +58,10 @@ func (s *InterceptorsTestSuite) createErrorHandler() func(context.Context, inter
 }
 
 func (s *InterceptorsTestSuite) TestNewLoggingInterceptor() {
-	interceptor := NewLoggingInterceptor(s.logger)
+	interceptor := interceptors.NewLoggingInterceptor(s.logger)
 
 	s.NotNil(interceptor)
-	s.Equal(s.logger, interceptor.logger)
+	s.Equal(s.logger, interceptor.Logger)
 }
 
 func (s *InterceptorsTestSuite) TestLoggingInterceptor_UnaryServerInterceptor_Success() {
@@ -161,7 +162,7 @@ func (s *InterceptorsTestSuite) TestGetLogLevelForStatusCode() {
 
 	for _, tc := range testCases {
 		s.Run(tc.code.String(), func() {
-			level := getLogLevelForStatusCode(tc.code)
+			level := interceptors.GetLogLevelForStatusCode(tc.code)
 			s.Equal(tc.expected, level)
 		})
 	}
@@ -172,11 +173,11 @@ func (s *InterceptorsTestSuite) TestGetRequestType() {
 	tokenReq := &authpb.TokenRequest{Token: "jwt-token"}
 	registerReq := &authpb.RegisterRequest{Email: "test@example.com"}
 
-	s.Equal("login_request", getRequestType(loginReq))
-	s.Equal("token_request", getRequestType(tokenReq))
-	s.Equal("register_request", getRequestType(registerReq))
-	s.Equal("nil", getRequestType(nil))
-	s.Equal("string_request", getRequestType("unknown"))
+	s.Equal("login_request", interceptors.GetRequestType(loginReq))
+	s.Equal("token_request", interceptors.GetRequestType(tokenReq))
+	s.Equal("register_request", interceptors.GetRequestType(registerReq))
+	s.Equal("nil", interceptors.GetRequestType(nil))
+	s.Equal("string_request", interceptors.GetRequestType("unknown"))
 }
 
 func (s *InterceptorsTestSuite) TestToSnakeCase() {
@@ -196,7 +197,7 @@ func (s *InterceptorsTestSuite) TestToSnakeCase() {
 
 	for _, tc := range testCases {
 		s.Run(tc.input, func() {
-			result := ToSnakeCase(tc.input)
+			result := interceptors.ToSnakeCase(tc.input)
 			s.Equal(tc.expected, result)
 		})
 	}

@@ -1,4 +1,4 @@
-package repositories
+package contracts
 
 import "github.com/Koshsky/subs-service/auth-service/internal/models"
 
@@ -18,7 +18,3 @@ type IDatabase interface {
 	Count(value *int64) IDatabase
 	GetError() error
 }
-
-// Interface compliance checks - will fail at compile time if interfaces are not implemented
-var _ IUserRepository = (*UserRepository)(nil)
-var _ IDatabase = (*GormAdapter)(nil)
