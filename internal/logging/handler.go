@@ -56,7 +56,7 @@ func (h *contextHandler) WithGroup(name string) slog.Handler {
 func extractContextAttrs(ctx context.Context) []slog.Attr {
 	var attrs []slog.Attr
 
-	logCtx, ok := ctx.Value("log_ctx").(*LogCtx)
+	logCtx, ok := ctx.Value(logCtxKey).(*LogCtx)
 	if !ok || logCtx == nil {
 		return attrs
 	}

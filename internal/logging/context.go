@@ -2,6 +2,12 @@ package logging
 
 import "context"
 
+// contextKey is a custom type for context keys to avoid collisions
+type contextKey string
+
+// logCtxKey is the key used to store LogCtx in context
+const logCtxKey contextKey = "log_ctx"
+
 /*
 Package logging provides context-aware structured logging capabilities.
 
@@ -38,14 +44,14 @@ type LogCtx struct {
 
 // WithLogCtx adds LogCtx to the context
 func WithLogCtx(ctx context.Context, logCtx *LogCtx) context.Context {
-	return context.WithValue(ctx, "log_ctx", logCtx)
+	return context.WithValue(ctx, logCtxKey, logCtx)
 }
 
 // getOrCreateLogCtx gets existing LogCtx from context or creates a new one
 // Always returns a copy to prevent data races between goroutines
 func getOrCreateLogCtx(ctx context.Context) (*LogCtx, context.Context) {
 	var newLogCtx *LogCtx
-	if existing, ok := ctx.Value("log_ctx").(*LogCtx); ok && existing != nil {
+	if existing, ok := ctx.Value(logCtxKey).(*LogCtx); ok && existing != nil {
 		// Create a copy of the existing LogCtx to prevent data races
 		newLogCtx = &LogCtx{
 			UserID:    existing.UserID,
@@ -57,7 +63,7 @@ func getOrCreateLogCtx(ctx context.Context) (*LogCtx, context.Context) {
 	} else {
 		newLogCtx = &LogCtx{}
 	}
-	return newLogCtx, context.WithValue(ctx, "log_ctx", newLogCtx)
+	return newLogCtx, context.WithValue(ctx, logCtxKey, newLogCtx)
 }
 
 // WithUserID adds user ID to the logging context

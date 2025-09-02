@@ -55,7 +55,7 @@ func (s *LoggingTestSuite) initLogging() {
 }
 
 func (s *LoggingTestSuite) getLogCtxFromContext(ctx context.Context) *LogCtx {
-	logCtx, ok := ctx.Value("log_ctx").(*LogCtx)
+	logCtx, ok := ctx.Value(logCtxKey).(*LogCtx)
 	s.True(ok)
 	return logCtx
 }
@@ -197,7 +197,7 @@ func (s *LoggingTestSuite) TestWithLogCtx() {
 
 func (s *LoggingTestSuite) TestWithLogCtx_NilLogCtx() {
 	ctx := WithLogCtx(s.ctx, nil)
-	s.Nil(ctx.Value("log_ctx"))
+	s.Nil(ctx.Value(logCtxKey))
 }
 
 func (s *LoggingTestSuite) TestWithUserID() {
@@ -268,7 +268,7 @@ func (s *LoggingTestSuite) TestGetOrCreateLogCtx_NewContext() {
 	s.NotNil(logCtx)
 	s.NotNil(newCtx)
 	s.IsType(&LogCtx{}, logCtx)
-	s.Equal(logCtx, newCtx.Value("log_ctx"))
+	s.Equal(logCtx, newCtx.Value(logCtxKey))
 }
 
 func (s *LoggingTestSuite) TestGetOrCreateLogCtx_ExistingContext() {
@@ -291,11 +291,11 @@ func (s *LoggingTestSuite) TestGetOrCreateLogCtx_ExistingContext() {
 }
 
 func (s *LoggingTestSuite) TestGetOrCreateLogCtx_NilExistingContext() {
-	ctx := context.WithValue(s.ctx, "log_ctx", nil)
+	ctx := context.WithValue(s.ctx, logCtxKey, nil)
 	logCtx, newCtx := getOrCreateLogCtx(ctx)
 	s.NotNil(logCtx)
 	s.IsType(&LogCtx{}, logCtx)
-	s.Equal(logCtx, newCtx.Value("log_ctx"))
+	s.Equal(logCtx, newCtx.Value(logCtxKey))
 }
 
 func (s *LoggingTestSuite) TestWithMultiple_AllFields() {
@@ -526,8 +526,8 @@ func (s *LoggingTestSuite) TestContextModification_Immutability() {
 	originalCtx := WithUserID(s.ctx, 123)
 	newCtx := WithRequestID(originalCtx, "new-req")
 
-	originalLogCtx, _ := originalCtx.Value("log_ctx").(*LogCtx)
-	newLogCtx, _ := newCtx.Value("log_ctx").(*LogCtx)
+	originalLogCtx, _ := originalCtx.Value(logCtxKey).(*LogCtx)
+	newLogCtx, _ := newCtx.Value(logCtxKey).(*LogCtx)
 
 	// Original context should not be modified
 	s.Equal(123, originalLogCtx.UserID)
@@ -591,7 +591,7 @@ func (s *LoggingTestSuite) TestThreadSafetyDataRace() {
 			ctx = WithOperation(ctx, fmt.Sprintf("op-%d", i))
 
 			// Extract the context data to verify no corruption
-			if logCtx, ok := ctx.Value("log_ctx").(*LogCtx); ok {
+			if logCtx, ok := ctx.Value(logCtxKey).(*LogCtx); ok {
 				results <- fmt.Sprintf("G1: user=%v req=%v op=%v",
 					logCtx.UserID, logCtx.RequestID, logCtx.Operation)
 			}
@@ -606,7 +606,7 @@ func (s *LoggingTestSuite) TestThreadSafetyDataRace() {
 			ctx = WithEmail(ctx, fmt.Sprintf("user%d@test.com", i))
 
 			// Extract the context data to verify no corruption
-			if logCtx, ok := ctx.Value("log_ctx").(*LogCtx); ok {
+			if logCtx, ok := ctx.Value(logCtxKey).(*LogCtx); ok {
 				results <- fmt.Sprintf("G2: user=%v trace=%v email=%v",
 					logCtx.UserID, logCtx.TraceID, logCtx.Email)
 			}
@@ -640,8 +640,8 @@ func (s *LoggingTestSuite) TestContextImmutability() {
 	derivedCtx := WithUserID(baseCtx, "derived-user")
 
 	// Verify that LogCtx pointers are different (no sharing)
-	baseLogCtx, _ := baseCtx.Value("log_ctx").(*LogCtx)
-	derivedLogCtx, _ := derivedCtx.Value("log_ctx").(*LogCtx)
+	baseLogCtx, _ := baseCtx.Value(logCtxKey).(*LogCtx)
+	derivedLogCtx, _ := derivedCtx.Value(logCtxKey).(*LogCtx)
 
 	s.NotEqual(baseLogCtx, derivedLogCtx, "LogCtx pointers should be different to prevent data races")
 
