@@ -247,7 +247,7 @@ func (s *MaskingTestSuite) TestMaskSensitiveData_EdgeCases() {
 
 	s.Run("Email with uppercase key and complex email", func() {
 		result := MaskSensitiveData("EMAIL", "very.long.email.address@sub.domain.example.com")
-		s.Equal("v*******************@sub.domain.example.com", result)
+		s.Equal("v**********************@sub.domain.example.com", result)
 	})
 }
 

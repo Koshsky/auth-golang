@@ -99,9 +99,3 @@ func createLogger(config config.LogConfig, output io.Writer) (*slog.Logger, erro
 
 	return slog.New(handler), nil
 }
-
-// ResetGlobalLogger resets the global logger state - used for testing only
-func ResetGlobalLogger() {
-	once = sync.Once{}
-	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
-}

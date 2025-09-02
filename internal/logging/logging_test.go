@@ -7,11 +7,19 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"sync"
 	"testing"
 
 	"github.com/Koshsky/subs-service/auth-service/internal/config"
 	"github.com/stretchr/testify/suite"
 )
+
+// ResetGlobalLogger resets the global logger state - used for testing only
+// This function is only available during testing and cannot be used in production code
+func ResetGlobalLogger() {
+	once = sync.Once{}
+	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
+}
 
 type LoggingTestSuite struct {
 	suite.Suite
