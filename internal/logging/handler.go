@@ -24,6 +24,8 @@ func (h *contextHandler) Enabled(ctx context.Context, level slog.Level) bool {
 }
 
 // Handle handles the Record by extracting context attributes
+//
+//nolint:gocritic // slog.Record is a standard interface requirement
 func (h *contextHandler) Handle(ctx context.Context, r slog.Record) error {
 	contextAttrs := extractContextAttrs(ctx)
 

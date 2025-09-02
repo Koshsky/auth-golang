@@ -70,7 +70,7 @@ func createLogger(config config.LogConfig, output io.Writer) (*slog.Logger, erro
 	baseHandler := slog.NewJSONHandler(output, &slog.HandlerOptions{
 		Level:     level,
 		AddSource: true,
-		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
+		ReplaceAttr: func(_ []string, a slog.Attr) slog.Attr {
 			switch a.Key {
 			case slog.TimeKey:
 				return slog.Attr{Key: "@timestamp", Value: a.Value}

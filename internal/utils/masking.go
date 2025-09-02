@@ -35,16 +35,16 @@ func MaskEmail(email interface{}) string {
 	domain := parts[1]
 
 	// Mask local part to prevent information leakage
-	if len(localPart) == 0 {
+	if localPart == "" {
 		return "*@" + domain
-	} else if len(localPart) <= 2 {
+	}
+	if len(localPart) <= 2 {
 		// For very short local parts (1-2 chars), mask completely to prevent info leakage
 		return strings.Repeat("*", len(localPart)) + "@" + domain
-	} else {
-		// For longer local parts, keep first character and mask the rest
-		maskedLocal := string(localPart[0]) + strings.Repeat("*", len(localPart)-1)
-		return maskedLocal + "@" + domain
 	}
+	// For longer local parts, keep first character and mask the rest
+	maskedLocal := string(localPart[0]) + strings.Repeat("*", len(localPart)-1)
+	return maskedLocal + "@" + domain
 }
 
 // MaskSensitiveData masks sensitive data based on field name (case-insensitive)
