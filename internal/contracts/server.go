@@ -3,7 +3,7 @@ package contracts
 import (
 	"context"
 
-	"github.com/Koshsky/subs-service/auth-service/internal/authpb"
+	"github.com/Koshsky/subs-service/auth-service/api/authpb"
 )
 
 //go:generate mockery --name=IAuthServer --output=./mocks --outpkg=mocks --filename=IAuthServer.go

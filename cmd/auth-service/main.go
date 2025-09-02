@@ -6,7 +6,7 @@ import (
 	"net"
 	"os"
 
-	"github.com/Koshsky/subs-service/auth-service/internal/authpb"
+	"github.com/Koshsky/subs-service/auth-service/api/authpb"
 	"github.com/Koshsky/subs-service/auth-service/internal/config"
 	"github.com/Koshsky/subs-service/auth-service/internal/interceptors"
 	"github.com/Koshsky/subs-service/auth-service/internal/logging"

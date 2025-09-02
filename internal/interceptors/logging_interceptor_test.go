@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"testing"
 
-	"github.com/Koshsky/subs-service/auth-service/internal/authpb"
+	"github.com/Koshsky/subs-service/auth-service/api/authpb"
 	"github.com/Koshsky/subs-service/auth-service/internal/interceptors"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"

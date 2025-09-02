@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/Koshsky/subs-service/auth-service/internal/authpb"
+	"github.com/Koshsky/subs-service/auth-service/api/authpb"
 	"github.com/Koshsky/subs-service/auth-service/internal/contracts/mocks"
 	"github.com/Koshsky/subs-service/auth-service/internal/models"
 	"github.com/Koshsky/subs-service/auth-service/internal/server"
