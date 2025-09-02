@@ -180,6 +180,90 @@ func (s *LoggingTestSuite) TestResetGlobalLogger() {
 	s.Equal("2.0.0", afterEntry["version"])
 }
 
+func (s *LoggingTestSuite) TestValidateLogLevel_ValidLevels() {
+	testCases := []struct {
+		input    string
+		expected slog.Level
+		valid    bool
+	}{
+		{"debug", slog.LevelDebug, true},
+		{"DEBUG", slog.LevelDebug, true},
+		{"Debug", slog.LevelDebug, true},
+		{"info", slog.LevelInfo, true},
+		{"INFO", slog.LevelInfo, true},
+		{"warn", slog.LevelWarn, true},
+		{"WARN", slog.LevelWarn, true},
+		{"warning", slog.LevelWarn, true},
+		{"WARNING", slog.LevelWarn, true},
+		{"error", slog.LevelError, true},
+		{"ERROR", slog.LevelError, true},
+	}
+
+	for _, tc := range testCases {
+		s.Run(fmt.Sprintf("Valid level %s", tc.input), func() {
+			level, valid := validateLogLevel(tc.input)
+			s.Equal(tc.expected, level)
+			s.Equal(tc.valid, valid)
+		})
+	}
+}
+
+func (s *LoggingTestSuite) TestValidateLogLevel_InvalidLevels() {
+	testCases := []string{
+		"invalid",
+		"trace",
+		"fatal",
+		"",
+		"UNKNOWN",
+		"info123",
+		" info ",
+	}
+
+	for _, input := range testCases {
+		s.Run(fmt.Sprintf("Invalid level %s", input), func() {
+			level, valid := validateLogLevel(input)
+			s.Equal(slog.LevelInfo, level) // Should default to INFO
+			s.False(valid)
+		})
+	}
+}
+
+func (s *LoggingTestSuite) TestCreateLogger_InvalidLogLevel() {
+	// Capture stderr to check warning message
+	originalStderr := os.Stderr
+	r, w, _ := os.Pipe()
+	os.Stderr = w
+
+	invalidConfig := config.LogConfig{
+		ServiceName: "test-service",
+		LogLevel:    "INVALID_LEVEL",
+		Environment: "test",
+		Version:     "1.0.0",
+	}
+
+	logger, err := createLogger(invalidConfig, s.buffer)
+	s.NoError(err)
+	s.NotNil(logger)
+
+	// Close the pipe and restore stderr
+	w.Close()
+	os.Stderr = originalStderr
+
+	// Read the captured stderr
+	buf := make([]byte, 1024)
+	n, _ := r.Read(buf)
+	stderrOutput := string(buf[:n])
+
+	s.Contains(stderrOutput, "WARNING: Unrecognized log level 'INVALID_LEVEL', defaulting to INFO")
+
+	// Test that logger actually uses INFO level
+	slog.SetDefault(logger)
+	slog.Info("test message")
+
+	logEntry := s.parseLogOutput()
+	s.Equal("INFO", logEntry["level"])
+}
+
 func (s *LoggingTestSuite) TestWithLogCtx() {
 	logCtx := s.createSampleLogCtx()
 	ctx := WithLogCtx(s.ctx, logCtx)
@@ -889,36 +973,6 @@ func (s *LoggingTestSuite) TestJSONFormatting() {
 	s.Equal("test", logEntry["string_field"])
 	s.Equal(float64(42), logEntry["int_field"])
 	s.Equal(true, logEntry["bool_field"])
-}
-
-// TestParseLogLevel tests the parseLogLevel function
-func (s *LoggingTestSuite) TestParseLogLevel() {
-	testCases := []struct {
-		input    string
-		expected slog.Level
-	}{
-		{"DEBUG", slog.LevelDebug},
-		{"debug", slog.LevelDebug},
-		{"Debug", slog.LevelDebug},
-		{"INFO", slog.LevelInfo},
-		{"info", slog.LevelInfo},
-		{"Info", slog.LevelInfo},
-		{"WARN", slog.LevelWarn},
-		{"warn", slog.LevelWarn},
-		{"WARNING", slog.LevelWarn},
-		{"warning", slog.LevelWarn},
-		{"ERROR", slog.LevelError},
-		{"error", slog.LevelError},
-		{"Error", slog.LevelError},
-		{"INVALID", slog.LevelInfo}, // Default to INFO
-		{"", slog.LevelInfo},        // Default to INFO
-		{"random", slog.LevelInfo},  // Default to INFO
-	}
-
-	for _, tc := range testCases {
-		result := parseLogLevel(tc.input)
-		s.Equal(tc.expected, result, "Failed for input: %s", tc.input)
-	}
 }
 
 // TestConfigIntegration tests integration with config package

@@ -2,6 +2,7 @@ package logging
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"os"
@@ -14,22 +15,6 @@ import (
 var (
 	once sync.Once
 )
-
-// parseLogLevel converts string log level to slog.Level
-func parseLogLevel(level string) slog.Level {
-	switch strings.ToUpper(level) {
-	case "DEBUG":
-		return slog.LevelDebug
-	case "INFO":
-		return slog.LevelInfo
-	case "WARN", "WARNING":
-		return slog.LevelWarn
-	case "ERROR":
-		return slog.LevelError
-	default:
-		return slog.LevelInfo
-	}
-}
 
 // InitLogging initializes global slog logger configuration
 func InitLogging(config config.LogConfig) error {
@@ -49,6 +34,22 @@ func InitLoggingWithOutput(logConfig config.LogConfig, output io.Writer) error {
 	return err
 }
 
+// validateLogLevel validates log level string and returns the level with validity flag
+func validateLogLevel(levelStr string) (slog.Level, bool) {
+	switch strings.ToLower(levelStr) {
+	case "debug":
+		return slog.LevelDebug, true
+	case "info":
+		return slog.LevelInfo, true
+	case "warn", "warning":
+		return slog.LevelWarn, true
+	case "error":
+		return slog.LevelError, true
+	default:
+		return slog.LevelInfo, false
+	}
+}
+
 // createLogger creates a new structured logger with JSON output
 func createLogger(config config.LogConfig, output io.Writer) (*slog.Logger, error) {
 	if config.ServiceName == "" {
@@ -58,9 +59,16 @@ func createLogger(config config.LogConfig, output io.Writer) (*slog.Logger, erro
 		output = os.Stdout
 	}
 
+	// Validate log level string before using it
+	level, valid := validateLogLevel(config.LogLevel)
+	if !valid {
+		fmt.Fprintf(os.Stderr, "WARNING: Unrecognized log level '%s', defaulting to INFO\n", config.LogLevel)
+		level = slog.LevelInfo
+	}
+
 	// Create base JSON handler with Kibana-compatible format
 	baseHandler := slog.NewJSONHandler(output, &slog.HandlerOptions{
-		Level:     parseLogLevel(config.LogLevel),
+		Level:     level,
 		AddSource: true,
 		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
 			switch a.Key {
