@@ -47,9 +47,10 @@ func MaskEmail(email interface{}) string {
 	}
 }
 
-// MaskSensitiveData masks sensitive data based on field name
+// MaskSensitiveData masks sensitive data based on field name (case-insensitive)
 func MaskSensitiveData(key string, value interface{}) interface{} {
-	switch key {
+	lowerKey := strings.ToLower(key)
+	switch lowerKey {
 	case "email":
 		return MaskEmail(value)
 	case "password", "token", "secret", "api_key":

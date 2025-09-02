@@ -159,17 +159,96 @@ func (s *MaskingTestSuite) TestMaskEmail_EdgeCases() {
 	})
 }
 
-// TestMaskSensitiveData_CaseSensitivity tests case sensitivity
-func (s *MaskingTestSuite) TestMaskSensitiveData_CaseSensitivity() {
-	sensitiveKeys := []string{"Password", "TOKEN", "Secret", "API_KEY"}
+// TestMaskSensitiveData_CaseInsensitivity tests case insensitivity
+func (s *MaskingTestSuite) TestMaskSensitiveData_CaseInsensitivity() {
+	testCases := []struct {
+		name     string
+		key      string
+		value    interface{}
+		expected interface{}
+	}{
+		// Email variations
+		{"email lowercase", "email", "test@example.com", "t***@example.com"},
+		{"EMAIL uppercase", "EMAIL", "test@example.com", "t***@example.com"},
+		{"Email mixed case", "Email", "test@example.com", "t***@example.com"},
+		{"eMaIl random case", "eMaIl", "test@example.com", "t***@example.com"},
 
-	for _, key := range sensitiveKeys {
-		s.Run("Case insensitive "+key, func() {
-			result := MaskSensitiveData(key, "sensitive-value")
-			// Current implementation is case-sensitive, so this should NOT be redacted
-			s.Equal("sensitive-value", result)
+		// Password variations
+		{"password lowercase", "password", "secret123", "[REDACTED]"},
+		{"PASSWORD uppercase", "PASSWORD", "secret123", "[REDACTED]"},
+		{"Password mixed case", "Password", "secret123", "[REDACTED]"},
+		{"PaSSwoRd random case", "PaSSwoRd", "secret123", "[REDACTED]"},
+
+		// Token variations
+		{"token lowercase", "token", "abc123xyz", "[REDACTED]"},
+		{"TOKEN uppercase", "TOKEN", "abc123xyz", "[REDACTED]"},
+		{"Token mixed case", "Token", "abc123xyz", "[REDACTED]"},
+		{"ToKeN random case", "ToKeN", "abc123xyz", "[REDACTED]"},
+
+		// Secret variations
+		{"secret lowercase", "secret", "mysecret", "[REDACTED]"},
+		{"SECRET uppercase", "SECRET", "mysecret", "[REDACTED]"},
+		{"Secret mixed case", "Secret", "mysecret", "[REDACTED]"},
+		{"SeCrEt random case", "SeCrEt", "mysecret", "[REDACTED]"},
+
+		// API key variations
+		{"api_key lowercase", "api_key", "key123", "[REDACTED]"},
+		{"API_KEY uppercase", "API_KEY", "key123", "[REDACTED]"},
+		{"Api_Key mixed case", "Api_Key", "key123", "[REDACTED]"},
+		{"ApI_kEy random case", "ApI_kEy", "key123", "[REDACTED]"},
+
+		// Non-sensitive keys should not be masked
+		{"non-sensitive lowercase", "username", "john_doe", "john_doe"},
+		{"non-sensitive uppercase", "USERNAME", "john_doe", "john_doe"},
+		{"non-sensitive mixed", "UserName", "john_doe", "john_doe"},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			result := MaskSensitiveData(tc.key, tc.value)
+			s.Equal(tc.expected, result)
 		})
 	}
+}
+
+// TestMaskSensitiveData_EdgeCases tests edge cases for case insensitive masking
+func (s *MaskingTestSuite) TestMaskSensitiveData_EdgeCases() {
+	s.Run("Empty key", func() {
+		result := MaskSensitiveData("", "value")
+		s.Equal("value", result)
+	})
+
+	s.Run("Whitespace in key", func() {
+		result := MaskSensitiveData(" password ", "secret")
+		// Should not match because of whitespace
+		s.Equal("secret", result)
+	})
+
+	s.Run("Partial match", func() {
+		result := MaskSensitiveData("passwords", "secret")
+		// Should not match - only exact matches
+		s.Equal("secret", result)
+	})
+
+	s.Run("Nil value with sensitive key", func() {
+		result := MaskSensitiveData("PASSWORD", nil)
+		s.Equal("[REDACTED]", result)
+	})
+
+	s.Run("Empty string value with sensitive key", func() {
+		result := MaskSensitiveData("TOKEN", "")
+		s.Equal("[REDACTED]", result)
+	})
+
+	s.Run("Non-string value with sensitive key", func() {
+		result := MaskSensitiveData("SECRET", 12345)
+		s.Equal("[REDACTED]", result)
+	})
+
+	s.Run("Email with uppercase key and complex email", func() {
+		result := MaskSensitiveData("EMAIL", "very.long.email.address@sub.domain.example.com")
+		s.Equal("v*******************@sub.domain.example.com", result)
+	})
 }
 
 // TestMaskingTestSuite runs the test suite
