@@ -20,7 +20,6 @@ var (
 func InitLogging(config config.LogConfig) error {
 	err := InitLoggingWithOutput(config, os.Stdout)
 	if err == nil {
-		// Log service startup information
 		slog.Info("Logging initialized",
 			"service", config.ServiceName,
 			"version", config.Version,
@@ -67,14 +66,12 @@ func createLogger(config config.LogConfig, output io.Writer) (*slog.Logger, erro
 		output = os.Stdout
 	}
 
-	// Validate log level string before using it
 	level, valid := validateLogLevel(config.LogLevel)
 	if !valid {
 		fmt.Fprintf(os.Stderr, "WARNING: Unrecognized log level '%s', defaulting to INFO\n", config.LogLevel)
 		level = slog.LevelInfo
 	}
 
-	// Create base JSON handler with Kibana-compatible format
 	baseHandler := slog.NewJSONHandler(output, &slog.HandlerOptions{
 		Level:     level,
 		AddSource: true,
@@ -94,7 +91,6 @@ func createLogger(config config.LogConfig, output io.Writer) (*slog.Logger, erro
 		},
 	})
 
-	// Add service metadata
 	handlerWithAttrs := baseHandler.WithAttrs([]slog.Attr{
 		slog.String("service", config.ServiceName),
 		slog.String("environment", config.Environment),
@@ -102,7 +98,6 @@ func createLogger(config config.LogConfig, output io.Writer) (*slog.Logger, erro
 		slog.String("hostname", getHostname()),
 	})
 
-	// Wrap with context handler
 	handler := newContextHandler(handlerWithAttrs)
 
 	return slog.New(handler), nil
