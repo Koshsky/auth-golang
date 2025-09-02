@@ -13,8 +13,20 @@ type ILoggingInterceptor interface {
 	StreamServerInterceptor() grpc.StreamServerInterceptor
 }
 
+// IUnaryInterceptor defines the interface for unary interceptors
+type IUnaryInterceptor interface {
+	UnaryServerInterceptor() grpc.UnaryServerInterceptor
+}
+
+// IStreamInterceptor defines the interface for stream interceptors
+type IStreamInterceptor interface {
+	StreamServerInterceptor() grpc.StreamServerInterceptor
+}
+
 // IInterceptorManager defines the interface for managing interceptors
 type IInterceptorManager interface {
+	AddUnaryInterceptor(interceptor IUnaryInterceptor)
+	AddStreamInterceptor(interceptor IStreamInterceptor)
 	GetUnaryInterceptors() []grpc.UnaryServerInterceptor
 	GetStreamInterceptors() []grpc.StreamServerInterceptor
 }

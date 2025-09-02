@@ -172,27 +172,22 @@ func getRequestType(req interface{}) string {
 		return "nil"
 	}
 
-	// Get the concrete type using reflection
 	reqType := reflect.TypeOf(req)
 	if reqType.Kind() == reflect.Ptr {
 		reqType = reqType.Elem()
 	}
 
-	// Extract the type name and convert to snake_case
 	typeName := reqType.Name()
 	if typeName == "" {
 		return "unknown_request"
 	}
 
-	// Convert PascalCase to snake_case for better readability
 	snakeCase := ToSnakeCase(typeName)
 
-	// Check if the type name already ends with "Request" and handle accordingly
 	if strings.HasSuffix(typeName, "Request") {
 		return snakeCase
 	}
 
-	// Add "_request" suffix only if it doesn't already have it
 	return snakeCase + "_request"
 }
 
@@ -204,12 +199,12 @@ func ToSnakeCase(s string) string {
 	}
 
 	var result strings.Builder
-	result.WriteRune(rune(s[0] | 32)) // Convert first character to lowercase
+	result.WriteRune(rune(s[0] | 32))
 
 	for i := 1; i < len(s); i++ {
 		if s[i] >= 'A' && s[i] <= 'Z' {
 			result.WriteRune('_')
-			result.WriteRune(rune(s[i] | 32)) // Convert to lowercase
+			result.WriteRune(rune(s[i] | 32))
 		} else {
 			result.WriteRune(rune(s[i]))
 		}

@@ -6,138 +6,143 @@ import (
 	"testing"
 
 	"github.com/Koshsky/subs-service/auth-service/internal/authpb"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/suite"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
 
-func TestNewLoggingInterceptor(t *testing.T) {
-	logger := &slog.Logger{}
-	interceptor := NewLoggingInterceptor(logger)
-
-	assert.NotNil(t, interceptor)
-	assert.Equal(t, logger, interceptor.logger)
+type InterceptorsTestSuite struct {
+	suite.Suite
+	logger      *slog.Logger
+	interceptor *LoggingInterceptor
+	manager     *InterceptorManager
+	ctx         context.Context
 }
 
-func TestLoggingInterceptor_UnaryServerInterceptor_Success(t *testing.T) {
-	// Setup
-	logger := slog.Default()
-	interceptor := NewLoggingInterceptor(logger)
+func (s *InterceptorsTestSuite) SetupTest() {
+	s.logger = slog.Default()
+	s.interceptor = NewLoggingInterceptor(s.logger)
+	s.manager = NewInterceptorManager()
+	s.ctx = context.Background()
+}
 
-	// Create test context with metadata
-	ctx := context.Background()
+func (s *InterceptorsTestSuite) createTestContext() context.Context {
 	md := metadata.New(map[string]string{
 		"x-request-id": "test-req-123",
 		"x-trace-id":   "test-trace-456",
 	})
-	ctx = metadata.NewIncomingContext(ctx, md)
+	return metadata.NewIncomingContext(s.ctx, md)
+}
 
-	// Create test request
-	req := &authpb.LoginRequest{
+func (s *InterceptorsTestSuite) createTestRequest() *authpb.LoginRequest {
+	return &authpb.LoginRequest{
 		Email:    "test@example.com",
 		Password: "password123",
 	}
+}
 
-	// Create mock handler
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+func (s *InterceptorsTestSuite) createSuccessHandler() func(context.Context, interface{}) (interface{}, error) {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		return &authpb.LoginResponse{Success: true}, nil
 	}
-
-	// Execute interceptor
-	unaryInterceptor := interceptor.UnaryServerInterceptor()
-	resp, err := unaryInterceptor(ctx, req, &grpc.UnaryServerInfo{
-		FullMethod: "/authpb.AuthService/Login",
-	}, handler)
-
-	// Verify results
-	assert.NoError(t, err)
-	assert.NotNil(t, resp)
 }
 
-func TestLoggingInterceptor_UnaryServerInterceptor_Error(t *testing.T) {
-	// Setup
-	logger := slog.Default()
-	interceptor := NewLoggingInterceptor(logger)
-
-	ctx := context.Background()
-	req := &authpb.LoginRequest{
-		Email:    "test@example.com",
-		Password: "password123",
-	}
-
-	// Create mock handler that returns error
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+func (s *InterceptorsTestSuite) createErrorHandler() func(context.Context, interface{}) (interface{}, error) {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		return nil, status.Error(codes.InvalidArgument, "Invalid credentials")
 	}
+}
 
-	// Execute interceptor
-	unaryInterceptor := interceptor.UnaryServerInterceptor()
+func (s *InterceptorsTestSuite) TestNewLoggingInterceptor() {
+	interceptor := NewLoggingInterceptor(s.logger)
+
+	s.NotNil(interceptor)
+	s.Equal(s.logger, interceptor.logger)
+}
+
+func (s *InterceptorsTestSuite) TestLoggingInterceptor_UnaryServerInterceptor_Success() {
+	ctx := s.createTestContext()
+	req := s.createTestRequest()
+	handler := s.createSuccessHandler()
+
+	unaryInterceptor := s.interceptor.UnaryServerInterceptor()
 	resp, err := unaryInterceptor(ctx, req, &grpc.UnaryServerInfo{
 		FullMethod: "/authpb.AuthService/Login",
 	}, handler)
 
-	// Verify results
-	assert.Error(t, err)
-	assert.Nil(t, resp)
-	assert.Equal(t, codes.InvalidArgument, status.Code(err))
+	s.NoError(err)
+	s.NotNil(resp)
 }
 
-func TestLoggingInterceptor_StreamServerInterceptor(t *testing.T) {
-	// Setup
-	logger := slog.Default()
-	interceptor := NewLoggingInterceptor(logger)
+func (s *InterceptorsTestSuite) TestLoggingInterceptor_UnaryServerInterceptor_Error() {
+	ctx := s.createTestContext()
+	req := s.createTestRequest()
+	handler := s.createErrorHandler()
 
-	// Create mock stream
+	unaryInterceptor := s.interceptor.UnaryServerInterceptor()
+	resp, err := unaryInterceptor(ctx, req, &grpc.UnaryServerInfo{
+		FullMethod: "/authpb.AuthService/Login",
+	}, handler)
+
+	s.Error(err)
+	s.Nil(resp)
+	s.Equal(codes.InvalidArgument, status.Code(err))
+}
+
+func (s *InterceptorsTestSuite) TestLoggingInterceptor_StreamServerInterceptor() {
 	mockStream := &MockServerStream{}
 	mockStream.On("Context").Return(context.Background())
 
-	// Create mock handler
 	handler := func(srv interface{}, stream grpc.ServerStream) error {
 		return nil
 	}
 
-	// Execute interceptor
-	streamInterceptor := interceptor.StreamServerInterceptor()
+	streamInterceptor := s.interceptor.StreamServerInterceptor()
 	err := streamInterceptor(nil, mockStream, &grpc.StreamServerInfo{
 		FullMethod:     "/authpb.AuthService/StreamMethod",
 		IsClientStream: true,
 		IsServerStream: false,
 	}, handler)
 
-	// Verify results
-	assert.NoError(t, err)
-	mockStream.AssertExpectations(t)
+	s.NoError(err)
+	mockStream.AssertExpectations(s.T())
 }
 
-func TestInterceptorManager(t *testing.T) {
-	// Setup
-	manager := NewInterceptorManager()
+func (s *InterceptorsTestSuite) TestInterceptorManager() {
+	s.manager.AddUnaryInterceptor(s.interceptor)
+	s.manager.AddStreamInterceptor(s.interceptor)
 
-	// Create a real logging interceptor for testing
-	logger := slog.Default()
-	realInterceptor := NewLoggingInterceptor(logger)
+	unaryInterceptors := s.manager.GetUnaryInterceptors()
+	streamInterceptors := s.manager.GetStreamInterceptors()
 
-	// Add interceptor to manager
-	manager.AddLoggingInterceptor(realInterceptor)
-
-	// Test unary interceptors
-	unaryInterceptors := manager.GetUnaryInterceptors()
-	assert.Len(t, unaryInterceptors, 1)
-
-	// Test stream interceptors
-	streamInterceptors := manager.GetStreamInterceptors()
-	assert.Len(t, streamInterceptors, 1)
-
-	// Test that interceptors are actually functions
-	assert.NotNil(t, unaryInterceptors[0])
-	assert.NotNil(t, streamInterceptors[0])
+	s.Len(unaryInterceptors, 1)
+	s.Len(streamInterceptors, 1)
+	s.NotNil(unaryInterceptors[0])
+	s.NotNil(streamInterceptors[0])
 }
 
-func TestGetLogLevelForStatusCode(t *testing.T) {
-	// Test various status codes
+func (s *InterceptorsTestSuite) TestInterceptorManagerWithDifferentTypes() {
+	s.manager.AddUnaryInterceptor(s.interceptor)
+	s.manager.AddStreamInterceptor(s.interceptor)
+
+	unaryInterceptors := s.manager.GetUnaryInterceptors()
+	streamInterceptors := s.manager.GetStreamInterceptors()
+
+	s.Len(unaryInterceptors, 1)
+	s.Len(streamInterceptors, 1)
+
+	for _, interceptor := range unaryInterceptors {
+		s.NotNil(interceptor)
+	}
+	for _, interceptor := range streamInterceptors {
+		s.NotNil(interceptor)
+	}
+}
+
+func (s *InterceptorsTestSuite) TestGetLogLevelForStatusCode() {
 	testCases := []struct {
 		code     codes.Code
 		expected slog.Level
@@ -155,29 +160,26 @@ func TestGetLogLevelForStatusCode(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		t.Run(tc.code.String(), func(t *testing.T) {
+		s.Run(tc.code.String(), func() {
 			level := getLogLevelForStatusCode(tc.code)
-			assert.Equal(t, tc.expected, level)
+			s.Equal(tc.expected, level)
 		})
 	}
 }
 
-func TestGetRequestType(t *testing.T) {
-	// Test different request types
+func (s *InterceptorsTestSuite) TestGetRequestType() {
 	loginReq := &authpb.LoginRequest{Email: "test@example.com"}
 	tokenReq := &authpb.TokenRequest{Token: "jwt-token"}
 	registerReq := &authpb.RegisterRequest{Email: "test@example.com"}
 
-	// Test with reflection-based type detection
-	assert.Equal(t, "login_request", getRequestType(loginReq))
-	assert.Equal(t, "token_request", getRequestType(tokenReq))
-	assert.Equal(t, "register_request", getRequestType(registerReq))
-	assert.Equal(t, "nil", getRequestType(nil))
-	assert.Equal(t, "string_request", getRequestType("unknown"))
+	s.Equal("login_request", getRequestType(loginReq))
+	s.Equal("token_request", getRequestType(tokenReq))
+	s.Equal("register_request", getRequestType(registerReq))
+	s.Equal("nil", getRequestType(nil))
+	s.Equal("string_request", getRequestType("unknown"))
 }
 
-func TestToSnakeCase(t *testing.T) {
-	// Test PascalCase to snake_case conversion
+func (s *InterceptorsTestSuite) TestToSnakeCase() {
 	testCases := []struct {
 		input    string
 		expected string
@@ -193,14 +195,13 @@ func TestToSnakeCase(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		t.Run(tc.input, func(t *testing.T) {
+		s.Run(tc.input, func() {
 			result := ToSnakeCase(tc.input)
-			assert.Equal(t, tc.expected, result)
+			s.Equal(tc.expected, result)
 		})
 	}
 }
 
-// MockServerStream is a mock implementation of grpc.ServerStream for testing
 type MockServerStream struct {
 	mock.Mock
 }
@@ -232,4 +233,8 @@ func (m *MockServerStream) SendMsg(msg interface{}) error {
 func (m *MockServerStream) RecvMsg(msg interface{}) error {
 	args := m.Called(msg)
 	return args.Error(0)
+}
+
+func TestInterceptorsSuite(t *testing.T) {
+	suite.Run(t, new(InterceptorsTestSuite))
 }

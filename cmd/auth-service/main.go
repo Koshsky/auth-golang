@@ -49,10 +49,11 @@ func setupServices(ctx context.Context, cfg *config.Config) (*services.AuthServi
 func createGRPCServer(ctx context.Context, cfg *config.Config) (*grpc.Server, error) {
 	ctx = logging.WithOperation(ctx, "create_grpc_server")
 
-	// Create interceptor manager and add logging interceptor
+	// Create interceptor manager and add interceptors
 	interceptorManager := interceptors.NewInterceptorManager()
 	loggingInterceptor := interceptors.NewLoggingInterceptor(slog.Default())
-	interceptorManager.AddLoggingInterceptor(loggingInterceptor)
+	interceptorManager.AddUnaryInterceptor(loggingInterceptor)
+	interceptorManager.AddStreamInterceptor(loggingInterceptor)
 
 	// Get interceptors
 	unaryInterceptors := interceptorManager.GetUnaryInterceptors()

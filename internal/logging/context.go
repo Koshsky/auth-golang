@@ -2,10 +2,8 @@ package logging
 
 import "context"
 
-// contextKey is a custom type for context keys to avoid collisions
 type contextKey string
 
-// logCtxKey is the key used to store LogCtx in context
 const logCtxKey contextKey = "log_ctx"
 
 /*
@@ -52,7 +50,6 @@ func WithLogCtx(ctx context.Context, logCtx *LogCtx) context.Context {
 func getOrCreateLogCtx(ctx context.Context) (*LogCtx, context.Context) {
 	var newLogCtx *LogCtx
 	if existing, ok := ctx.Value(logCtxKey).(*LogCtx); ok && existing != nil {
-		// Create a copy of the existing LogCtx to prevent data races
 		newLogCtx = &LogCtx{
 			UserID:    existing.UserID,
 			RequestID: existing.RequestID,
