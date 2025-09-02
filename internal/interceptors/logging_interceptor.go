@@ -2,6 +2,8 @@ package interceptors
 
 import (
 	"context"
+	"reflect"
+	"strings"
 	"time"
 
 	"log/slog"
@@ -32,7 +34,7 @@ func (i *LoggingInterceptor) UnaryServerInterceptor() grpc.UnaryServerIntercepto
 	) (interface{}, error) {
 		startTime := time.Now()
 
-		logCtx := i.extractLoggingContext(ctx, info)
+		logCtx := i.extractLoggingContext(ctx)
 
 		i.logger.InfoContext(logCtx, "gRPC request started",
 			"method", info.FullMethod,
@@ -58,7 +60,7 @@ func (i *LoggingInterceptor) StreamServerInterceptor() grpc.StreamServerIntercep
 	) error {
 		startTime := time.Now()
 
-		logCtx := i.extractLoggingContext(stream.Context(), info)
+		logCtx := i.extractLoggingContext(stream.Context())
 
 		i.logger.InfoContext(logCtx, "gRPC stream started",
 			"method", info.FullMethod,
@@ -76,7 +78,7 @@ func (i *LoggingInterceptor) StreamServerInterceptor() grpc.StreamServerIntercep
 	}
 }
 
-func (i *LoggingInterceptor) extractLoggingContext(ctx context.Context, info interface{}) context.Context {
+func (i *LoggingInterceptor) extractLoggingContext(ctx context.Context) context.Context {
 	logCtx := logging.WithOperation(ctx, "grpc_request")
 
 	if md, ok := metadata.FromIncomingContext(ctx); ok {
@@ -111,6 +113,7 @@ func (i *LoggingInterceptor) logRequestCompletion(
 			level = getLogLevelForStatusCode(st.Code())
 			message = "gRPC request completed with error"
 			additionalFields = []interface{}{
+				"method", method,
 				"grpc_code", st.Code().String(),
 				"grpc_message", st.Message(),
 				"duration_ms", duration.Milliseconds(),
@@ -119,6 +122,7 @@ func (i *LoggingInterceptor) logRequestCompletion(
 			level = slog.LevelError
 			message = "gRPC request completed with unexpected error"
 			additionalFields = []interface{}{
+				"method", method,
 				"error", err.Error(),
 				"duration_ms", duration.Milliseconds(),
 			}
@@ -127,6 +131,7 @@ func (i *LoggingInterceptor) logRequestCompletion(
 		level = slog.LevelInfo
 		message = "gRPC request completed successfully"
 		additionalFields = []interface{}{
+			"method", method,
 			"duration_ms", duration.Milliseconds(),
 		}
 	}
@@ -161,20 +166,54 @@ func getLogLevelForStatusCode(code codes.Code) slog.Level {
 	}
 }
 
-// getRequestType extracts the type name from the request interface
+// getRequestType extracts the type name from the request interface using reflection
 func getRequestType(req interface{}) string {
 	if req == nil {
 		return "nil"
 	}
 
-	// Use type assertion to get the concrete type
-	switch req.(type) {
-	case interface{ GetEmail() string }:
-		return "auth_request"
-	case interface{ GetToken() string }:
-		return "token_request"
-	default:
-		// Fallback to reflection if needed
+	// Get the concrete type using reflection
+	reqType := reflect.TypeOf(req)
+	if reqType.Kind() == reflect.Ptr {
+		reqType = reqType.Elem()
+	}
+
+	// Extract the type name and convert to snake_case
+	typeName := reqType.Name()
+	if typeName == "" {
 		return "unknown_request"
 	}
+
+	// Convert PascalCase to snake_case for better readability
+	snakeCase := ToSnakeCase(typeName)
+
+	// Check if the type name already ends with "Request" and handle accordingly
+	if strings.HasSuffix(typeName, "Request") {
+		return snakeCase
+	}
+
+	// Add "_request" suffix only if it doesn't already have it
+	return snakeCase + "_request"
+}
+
+// ToSnakeCase converts PascalCase strings to snake_case
+// Exported for testing purposes
+func ToSnakeCase(s string) string {
+	if s == "" {
+		return s
+	}
+
+	var result strings.Builder
+	result.WriteRune(rune(s[0] | 32)) // Convert first character to lowercase
+
+	for i := 1; i < len(s); i++ {
+		if s[i] >= 'A' && s[i] <= 'Z' {
+			result.WriteRune('_')
+			result.WriteRune(rune(s[i] | 32)) // Convert to lowercase
+		} else {
+			result.WriteRune(rune(s[i]))
+		}
+	}
+
+	return result.String()
 }

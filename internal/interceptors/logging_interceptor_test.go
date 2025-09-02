@@ -166,11 +166,38 @@ func TestGetRequestType(t *testing.T) {
 	// Test different request types
 	loginReq := &authpb.LoginRequest{Email: "test@example.com"}
 	tokenReq := &authpb.TokenRequest{Token: "jwt-token"}
+	registerReq := &authpb.RegisterRequest{Email: "test@example.com"}
 
-	assert.Equal(t, "auth_request", getRequestType(loginReq))
+	// Test with reflection-based type detection
+	assert.Equal(t, "login_request", getRequestType(loginReq))
 	assert.Equal(t, "token_request", getRequestType(tokenReq))
+	assert.Equal(t, "register_request", getRequestType(registerReq))
 	assert.Equal(t, "nil", getRequestType(nil))
-	assert.Equal(t, "unknown_request", getRequestType("unknown"))
+	assert.Equal(t, "string_request", getRequestType("unknown"))
+}
+
+func TestToSnakeCase(t *testing.T) {
+	// Test PascalCase to snake_case conversion
+	testCases := []struct {
+		input    string
+		expected string
+	}{
+		{"LoginRequest", "login_request"},
+		{"TokenRequest", "token_request"},
+		{"RegisterRequest", "register_request"},
+		{"UserProfileRequest", "user_profile_request"},
+		{"APIRequest", "a_p_i_request"},
+		{"", ""},
+		{"A", "a"},
+		{"AB", "a_b"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.input, func(t *testing.T) {
+			result := ToSnakeCase(tc.input)
+			assert.Equal(t, tc.expected, result)
+		})
+	}
 }
 
 // MockServerStream is a mock implementation of grpc.ServerStream for testing
