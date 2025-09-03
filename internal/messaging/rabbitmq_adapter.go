@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/Koshsky/subs-service/auth-service/internal/config"
-	"github.com/Koshsky/subs-service/auth-service/internal/contracts"
+	contracts_messaging "github.com/Koshsky/subs-service/auth-service/internal/contracts/messaging"
 	"github.com/Koshsky/subs-service/auth-service/internal/models"
 	"github.com/google/uuid"
 	"github.com/wagslane/go-rabbitmq"
@@ -14,8 +14,8 @@ import (
 
 // RabbitMQAdapter implements IMessageBroker for RabbitMQ
 type RabbitMQAdapter struct {
-	Publisher contracts.IRabbitMQPublisher
-	Conn      contracts.IRabbitMQConn
+	Publisher contracts_messaging.IRabbitMQPublisher
+	Conn      contracts_messaging.IRabbitMQConn
 	Config    config.RabbitMQConfig
 }
 
@@ -29,7 +29,7 @@ type UserDeletedEvent struct {
 }
 
 // NewRabbitMQAdapter creates a new RabbitMQ adapter
-func NewRabbitMQAdapter(rabbitmqConfig config.RabbitMQConfig) (contracts.IMessageBroker, error) {
+func NewRabbitMQAdapter(rabbitmqConfig config.RabbitMQConfig) (contracts_messaging.IMessageBroker, error) {
 	// Create connection with automatic reconnection
 	conn, err := rabbitmq.NewConn(
 		rabbitmqConfig.URL,

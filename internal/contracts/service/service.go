@@ -1,4 +1,4 @@
-package contracts
+package service
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-//go:generate mockery --name=IAuthService --output=./mocks --outpkg=mocks --filename=IAuthService.go
+//go:generate mockery --name=IAuthService --output=../mocks --outpkg=mocks --filename=IAuthService.go
 type IAuthService interface {
 	Register(ctx context.Context, email, password string) (*models.User, error)
 	Login(ctx context.Context, email, password string) (string, *models.User, error)

@@ -4,16 +4,16 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/Koshsky/subs-service/auth-service/internal/contracts"
+	contracts_repository "github.com/Koshsky/subs-service/auth-service/internal/contracts/repository"
 	"github.com/Koshsky/subs-service/auth-service/internal/models"
 	"github.com/google/uuid"
 )
 
 type UserRepository struct {
-	DB contracts.IDatabase
+	DB contracts_repository.IDatabase
 }
 
-func NewUserRepository(db contracts.IDatabase) *UserRepository {
+func NewUserRepository(db contracts_repository.IDatabase) *UserRepository {
 	return &UserRepository{DB: db}
 }
 

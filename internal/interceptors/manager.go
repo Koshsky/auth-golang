@@ -1,31 +1,31 @@
 package interceptors
 
 import (
-	"github.com/Koshsky/subs-service/auth-service/internal/contracts"
+	contracts_interceptor "github.com/Koshsky/subs-service/auth-service/internal/contracts/interceptor"
 	"google.golang.org/grpc"
 )
 
 // InterceptorManager manages all interceptors for the gRPC server
 type InterceptorManager struct {
-	UnaryInterceptors  []contracts.IUnaryInterceptor
-	StreamInterceptors []contracts.IStreamInterceptor
+	UnaryInterceptors  []contracts_interceptor.IUnaryInterceptor
+	StreamInterceptors []contracts_interceptor.IStreamInterceptor
 }
 
 // NewInterceptorManager creates a new interceptor manager
 func NewInterceptorManager() *InterceptorManager {
 	return &InterceptorManager{
-		UnaryInterceptors:  make([]contracts.IUnaryInterceptor, 0),
-		StreamInterceptors: make([]contracts.IStreamInterceptor, 0),
+		UnaryInterceptors:  make([]contracts_interceptor.IUnaryInterceptor, 0),
+		StreamInterceptors: make([]contracts_interceptor.IStreamInterceptor, 0),
 	}
 }
 
 // AddUnaryInterceptor adds a unary interceptor to the manager
-func (m *InterceptorManager) AddUnaryInterceptor(interceptor contracts.IUnaryInterceptor) {
+func (m *InterceptorManager) AddUnaryInterceptor(interceptor contracts_interceptor.IUnaryInterceptor) {
 	m.UnaryInterceptors = append(m.UnaryInterceptors, interceptor)
 }
 
 // AddStreamInterceptor adds a stream interceptor to the manager
-func (m *InterceptorManager) AddStreamInterceptor(interceptor contracts.IStreamInterceptor) {
+func (m *InterceptorManager) AddStreamInterceptor(interceptor contracts_interceptor.IStreamInterceptor) {
 	m.StreamInterceptors = append(m.StreamInterceptors, interceptor)
 }
 

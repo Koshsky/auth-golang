@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/Koshsky/subs-service/auth-service/internal/config"
-	"github.com/Koshsky/subs-service/auth-service/internal/contracts"
+	contracts_repository "github.com/Koshsky/subs-service/auth-service/internal/contracts/repository"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -16,7 +16,7 @@ type GormAdapter struct {
 }
 
 // NewGormAdapter creates a new adapter for GORM with config
-func NewGormAdapter(dbConfig *config.DBConfig) (contracts.IDatabase, error) {
+func NewGormAdapter(dbConfig *config.DBConfig) (contracts_repository.IDatabase, error) {
 	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
 		dbConfig.Host, dbConfig.Port, dbConfig.User, dbConfig.Password, dbConfig.DBName, dbConfig.SSLMode)
 
@@ -29,39 +29,39 @@ func NewGormAdapter(dbConfig *config.DBConfig) (contracts.IDatabase, error) {
 }
 
 // NewGormAdapterFromDB creates a new adapter from existing GORM DB (for testing)
-func NewGormAdapterFromDB(db *gorm.DB) contracts.IDatabase {
+func NewGormAdapterFromDB(db *gorm.DB) contracts_repository.IDatabase {
 	return &GormAdapter{db: db}
 }
 
-func (g *GormAdapter) Create(value interface{}) contracts.IDatabase {
+func (g *GormAdapter) Create(value interface{}) contracts_repository.IDatabase {
 	if g.db == nil {
 		return &GormAdapter{db: nil}
 	}
 	return &GormAdapter{db: g.db.Create(value)}
 }
 
-func (g *GormAdapter) Where(query interface{}, args ...interface{}) contracts.IDatabase {
+func (g *GormAdapter) Where(query interface{}, args ...interface{}) contracts_repository.IDatabase {
 	if g.db == nil {
 		return &GormAdapter{db: nil}
 	}
 	return &GormAdapter{db: g.db.Where(query, args...)}
 }
 
-func (g *GormAdapter) First(dest interface{}, conds ...interface{}) contracts.IDatabase {
+func (g *GormAdapter) First(dest interface{}, conds ...interface{}) contracts_repository.IDatabase {
 	if g.db == nil {
 		return &GormAdapter{db: nil}
 	}
 	return &GormAdapter{db: g.db.First(dest, conds...)}
 }
 
-func (g *GormAdapter) Model(value interface{}) contracts.IDatabase {
+func (g *GormAdapter) Model(value interface{}) contracts_repository.IDatabase {
 	if g.db == nil {
 		return &GormAdapter{db: nil}
 	}
 	return &GormAdapter{db: g.db.Model(value)}
 }
 
-func (g *GormAdapter) Count(value *int64) contracts.IDatabase {
+func (g *GormAdapter) Count(value *int64) contracts_repository.IDatabase {
 	if g.db == nil {
 		return &GormAdapter{db: nil}
 	}
