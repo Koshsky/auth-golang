@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package authpb;
 
-option go_package = "github.com/Koshsky/subs-service/auth-service/internal/authpb";
+option go_package = "github.com/Koshsky/subs-service/auth-service/api/authpb";
 
 // Token validation request
 message TokenRequest {

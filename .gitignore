@@ -4,3 +4,6 @@
 *.html
 
 .env
+
+bin/
+coverage/

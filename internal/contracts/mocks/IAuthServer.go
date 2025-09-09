@@ -5,7 +5,7 @@ package mocks
 import (
 	context "context"
 
-	authpb "github.com/Koshsky/subs-service/auth-service/internal/authpb"
+	authpb "github.com/Koshsky/subs-service/auth-service/api/authpb"
 
 	mock "github.com/stretchr/testify/mock"
 )

@@ -3,16 +3,16 @@ package server
 import (
 	"context"
 
-	"github.com/Koshsky/subs-service/auth-service/internal/authpb"
-	"github.com/Koshsky/subs-service/auth-service/internal/services"
+	"github.com/Koshsky/subs-service/auth-service/api/authpb"
+	contracts_service "github.com/Koshsky/subs-service/auth-service/internal/contracts/service"
 )
 
 type AuthServer struct {
 	authpb.UnimplementedAuthServiceServer
-	AuthService services.IAuthService
+	AuthService contracts_service.IAuthService
 }
 
-func NewAuthServer(authService services.IAuthService) *AuthServer {
+func NewAuthServer(authService contracts_service.IAuthService) *AuthServer {
 	return &AuthServer{
 		AuthService: authService,
 	}

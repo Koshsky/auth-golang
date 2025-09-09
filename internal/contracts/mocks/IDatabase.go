@@ -3,7 +3,7 @@
 package mocks
 
 import (
-	repositories "github.com/Koshsky/subs-service/auth-service/internal/repositories"
+	contracts "github.com/Koshsky/subs-service/auth-service/internal/contracts"
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -13,19 +13,19 @@ type IDatabase struct {
 }
 
 // Count provides a mock function with given fields: value
-func (_m *IDatabase) Count(value *int64) repositories.IDatabase {
+func (_m *IDatabase) Count(value *int64) contracts.IDatabase {
 	ret := _m.Called(value)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Count")
 	}
 
-	var r0 repositories.IDatabase
-	if rf, ok := ret.Get(0).(func(*int64) repositories.IDatabase); ok {
+	var r0 contracts.IDatabase
+	if rf, ok := ret.Get(0).(func(*int64) contracts.IDatabase); ok {
 		r0 = rf(value)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(repositories.IDatabase)
+			r0 = ret.Get(0).(contracts.IDatabase)
 		}
 	}
 
@@ -33,19 +33,19 @@ func (_m *IDatabase) Count(value *int64) repositories.IDatabase {
 }
 
 // Create provides a mock function with given fields: value
-func (_m *IDatabase) Create(value interface{}) repositories.IDatabase {
+func (_m *IDatabase) Create(value interface{}) contracts.IDatabase {
 	ret := _m.Called(value)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Create")
 	}
 
-	var r0 repositories.IDatabase
-	if rf, ok := ret.Get(0).(func(interface{}) repositories.IDatabase); ok {
+	var r0 contracts.IDatabase
+	if rf, ok := ret.Get(0).(func(interface{}) contracts.IDatabase); ok {
 		r0 = rf(value)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(repositories.IDatabase)
+			r0 = ret.Get(0).(contracts.IDatabase)
 		}
 	}
 
@@ -53,7 +53,7 @@ func (_m *IDatabase) Create(value interface{}) repositories.IDatabase {
 }
 
 // First provides a mock function with given fields: dest, conds
-func (_m *IDatabase) First(dest interface{}, conds ...interface{}) repositories.IDatabase {
+func (_m *IDatabase) First(dest interface{}, conds ...interface{}) contracts.IDatabase {
 	var _ca []interface{}
 	_ca = append(_ca, dest)
 	_ca = append(_ca, conds...)
@@ -63,12 +63,12 @@ func (_m *IDatabase) First(dest interface{}, conds ...interface{}) repositories.
 		panic("no return value specified for First")
 	}
 
-	var r0 repositories.IDatabase
-	if rf, ok := ret.Get(0).(func(interface{}, ...interface{}) repositories.IDatabase); ok {
+	var r0 contracts.IDatabase
+	if rf, ok := ret.Get(0).(func(interface{}, ...interface{}) contracts.IDatabase); ok {
 		r0 = rf(dest, conds...)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(repositories.IDatabase)
+			r0 = ret.Get(0).(contracts.IDatabase)
 		}
 	}
 
@@ -94,19 +94,19 @@ func (_m *IDatabase) GetError() error {
 }
 
 // Model provides a mock function with given fields: value
-func (_m *IDatabase) Model(value interface{}) repositories.IDatabase {
+func (_m *IDatabase) Model(value interface{}) contracts.IDatabase {
 	ret := _m.Called(value)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Model")
 	}
 
-	var r0 repositories.IDatabase
-	if rf, ok := ret.Get(0).(func(interface{}) repositories.IDatabase); ok {
+	var r0 contracts.IDatabase
+	if rf, ok := ret.Get(0).(func(interface{}) contracts.IDatabase); ok {
 		r0 = rf(value)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(repositories.IDatabase)
+			r0 = ret.Get(0).(contracts.IDatabase)
 		}
 	}
 
@@ -114,7 +114,7 @@ func (_m *IDatabase) Model(value interface{}) repositories.IDatabase {
 }
 
 // Where provides a mock function with given fields: query, args
-func (_m *IDatabase) Where(query interface{}, args ...interface{}) repositories.IDatabase {
+func (_m *IDatabase) Where(query interface{}, args ...interface{}) contracts.IDatabase {
 	var _ca []interface{}
 	_ca = append(_ca, query)
 	_ca = append(_ca, args...)
@@ -124,12 +124,12 @@ func (_m *IDatabase) Where(query interface{}, args ...interface{}) repositories.
 		panic("no return value specified for Where")
 	}
 
-	var r0 repositories.IDatabase
-	if rf, ok := ret.Get(0).(func(interface{}, ...interface{}) repositories.IDatabase); ok {
+	var r0 contracts.IDatabase
+	if rf, ok := ret.Get(0).(func(interface{}, ...interface{}) contracts.IDatabase); ok {
 		r0 = rf(query, args...)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(repositories.IDatabase)
+			r0 = ret.Get(0).(contracts.IDatabase)
 		}
 	}
 
